@@ -1,0 +1,55 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const PROMPTS_PATH = process.env.PROMPTS_PATH ?? join(process.cwd(), "prompts.json");
+const prompts = JSON.parse(readFileSync(PROMPTS_PATH, "utf8"));
+
+export const IMPLEMENT_SYSTEM_PROMPT: string = prompts.implementation.system;
+export const RETRY_NOTICE: string = prompts.implementation.retryNotice;
+
+export interface VerifyResult {
+  verifyPassed: boolean;
+  verifyOutput: string;
+  changeSummary: string;
+}
+
+export function parseVerifyResult(raw: string): VerifyResult {
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) {
+    return { verifyPassed: false, verifyOutput: `agent returned no JSON result:\n${raw}`.slice(0, 3000), changeSummary: "" };
+  }
+  try {
+    const parsed = JSON.parse(match[0]);
+    return {
+      verifyPassed: parsed.verifyPassed === true,
+      verifyOutput: String(parsed.verifyOutput ?? ""),
+      changeSummary: String(parsed.changeSummary ?? ""),
+    };
+  } catch {
+    return { verifyPassed: false, verifyOutput: `could not parse agent result:\n${raw}`.slice(0, 3000), changeSummary: "" };
+  }
+}
+
+export function issueKeyToBranch(key: string, issueType: string): string {
+  const prefix = issueType.toLowerCase() === "bug" ? "bugfix" : "feature";
+  return `${prefix}/${key.toLowerCase()}`;
+}
+
+export function getCommitEmoji(issueType: string): string {
+  return issueType.toLowerCase() === "bug" ? "🐛" : "✨";
+}
+
+export function buildPrBody(args: {
+  issueKey: string; summary: string; guessedRepo: string;
+}): string {
+  const lines = [
+    `## ${args.issueKey}`,
+    "",
+    args.summary,
+    "",
+    "---",
+    "_Pull request aberto automaticamente pela automação cashme-agent._",
+  ];
+
+  return lines.join("\n");
+}

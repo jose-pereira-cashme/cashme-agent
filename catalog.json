@@ -1,0 +1,10 @@
+{
+  "repos": [
+    {
+      "name": "cashme",
+      "description": "Site institucional da cashme. A porta de entrada. O site do marketing",
+      "url": "https://github.com/cash-me/cashme.git",
+      "defaultBranch": "master"
+    }
+  ]
+}
