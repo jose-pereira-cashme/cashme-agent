@@ -2,8 +2,68 @@
   "repos": [
     {
       "name": "cashme",
-      "description": "Site institucional da cashme. A porta de entrada. O site do marketing",
+      "description": "Site institucional da cashme (Next.js). A porta de entrada e o site de marketing — páginas públicas, landing pages e conteúdo institucional. NÃO é área logada de cliente nem simulador.",
       "url": "https://github.com/cash-me/cashme.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "cashmember",
+      "description": "Portal do CashMember (Next.js) — área logada do cliente CashMe (tomador do crédito com garantia de imóvel). Compartilha o MESMO código-base que 'cashplayer' (portal dos parceiros); mudanças normalmente valem para os dois. SEMPRE inclua 'cashmember' e 'cashplayer' na tarefa, a menos que ela especifique explicitamente apenas um.",
+      "url": "https://github.com/cash-me/cashmember.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "portal-cashmember-users",
+      "description": "Módulo de usuários do portal CashMember (Next.js, pacote 'cashmember-users'). Cadastro, autenticação e gestão de contas/permissões dos membros — mexe em telas e fluxos de usuário do portal do cliente, não no portal inteiro.",
+      "url": "https://github.com/cash-me/portal-cashmember-users.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "cashplayer",
+      "description": "Portal do CashPlayer (Next.js) — área logada dos parceiros/originadores (corretores e imobiliárias) que indicam operações. Compartilha o MESMO código-base que 'cashmember' (portal do cliente); mudanças normalmente valem para os dois. SEMPRE inclua 'cashmember' e 'cashplayer' na tarefa, a menos que ela especifique explicitamente apenas um.",
+      "url": "https://github.com/cash-me/cashplayer.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "cashplayer-users-partners",
+      "description": "Módulo de usuários e parceiros do portal CashPlayer (Next.js). Cadastro, autenticação e gestão de contas dos parceiros/originadores. Use para mudanças em usuários do CashPlayer, não no portal completo.",
+      "url": "https://github.com/cash-me/cashplayer-users-partners.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "cf-simulador-online",
+      "description": "Simulador 3.0 (Next.js) — simulador online de Home Equity / crédito com garantia de imóvel para o cliente. É o MESMO projeto que 'cf-simulador-online-sec'; os dois repos rodam em paralelo como testes A/B. SEMPRE inclua os dois ('cf-simulador-online' e 'cf-simulador-online-sec') na tarefa, a menos que ela especifique explicitamente apenas um.",
+      "url": "https://github.com/cash-me/cf-simulador-online.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "cf-simulador-online-sec",
+      "description": "Simulador 3.0 (Next.js) — segunda instância do simulador online de Home Equity. É o MESMO projeto que 'cf-simulador-online'; os dois repos rodam em paralelo como testes A/B. SEMPRE inclua os dois ('cf-simulador-online' e 'cf-simulador-online-sec') na tarefa, a menos que ela especifique explicitamente apenas um.",
+      "url": "https://github.com/cash-me/cf-simulador-online-sec.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "insurance-landing-page",
+      "description": "Landing page de seguros (Next.js, pnpm) — fluxo de escolha de seguradoras para o produto de seguros da CashMe. Página de captação/conversão focada em seguros.",
+      "url": "https://github.com/cash-me/insurance-landing-page.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "design-system",
+      "description": "Design System LEGADO da CashMe (@cash-me/design-system, v4.x) — biblioteca de componentes React + Storybook ainda usada pelos projetos atuais. Está sendo descontinuado: os projetos estão migrando para 'newest-design-system'. Use este apenas para correções/manutenção no DS antigo; para trabalho novo, prefira 'newest-design-system'.",
+      "url": "https://github.com/cash-me/design-system.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "newest-design-system",
+      "description": "Novo Design System da CashMe (monorepo Nx, 'design-system-cashme') — biblioteca de componentes React + Storybook para a qual TODOS os projetos estão migrando. É o design system ALVO/oficial daqui para frente. Prefira este para qualquer trabalho novo de design system; use 'design-system' (legado) só para manutenção do antigo.",
+      "url": "https://github.com/cash-me/newest-design-system.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "secme",
+      "description": "Site da Secme Securitizadora (site estático em HTML/CSS/JS puro, sem framework) — portal de relações com investidores/documentos: emissões, comunicados, governança e demonstrações financeiras. Não é aplicação React/Next.",
+      "url": "https://github.com/cash-me/secme.git",
       "defaultBranch": "master"
     }
   ]
