@@ -1,23 +1,22 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import type { AgentAnalyses, JiraIssue } from "../HandleWebhook.ts";
+import type { AgentAnalyses, JiraIssue } from "../../types/domain.ts";
 import { Catalog } from "../../tools/Catalog.ts";
 import { Agent } from "../../agent/index.ts";
+import { readPrompt } from "../../utils/prompts.ts";
 
-const PROMPTS_PATH = process.env.PROMPTS_PATH ?? join(process.cwd(), "prompts.json");
-const prompts = JSON.parse(readFileSync(PROMPTS_PATH, "utf8"));
-
-const TRIAGE_SYSTEM_PROMPT: string = prompts.triage.system;
-const TRIAGE_INSTRUCTIONS: string = prompts.triage.instructions;
+const TRIAGE_SYSTEM_PROMPT: string = readPrompt("triage", "system");
+const TRIAGE_INSTRUCTIONS: string = readPrompt("triage", "instructions");
 
 export async function analyseIssue(issue: JiraIssue): Promise<AgentAnalyses> {
   const agent = Agent();
   const catalog = Catalog();
+  const log = (msg: string) => console.log(`[analyse ${issue.key}] ${msg}`);
 
   const list = catalog.repos.map((r) => `- ${r.name}: ${r.description}`).join("\n");
+  const docs = issue.linkedDocs ? `\n\nLinked documentation:\n${issue.linkedDocs}` : "";
+  const comments = issue.comments ? `\n\nTicket comments (chronological):\n${issue.comments}` : "";
   const prompt = [
     `Jira issue ${issue.key}: ${issue.summary}`,
-    `Description:\n${issue.description}`,
+    `Description:\n${issue.description}${docs}${comments}`,
     ``,
     `Available repositories:`,
     list,
@@ -27,7 +26,9 @@ export async function analyseIssue(issue: JiraIssue): Promise<AgentAnalyses> {
 
   // Pure text classification — no file tools.
   const out = await agent.query(prompt, TRIAGE_SYSTEM_PROMPT, []);
-  return parseAnalyses(out);
+  const analyses = parseAnalyses(out);
+  log(`taskType=${analyses.taskType} repos=[${analyses.repoNames.join(",")}]`);
+  return analyses;
 }
 
 function parseAnalyses(raw: string): AgentAnalyses {

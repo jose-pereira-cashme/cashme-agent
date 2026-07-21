@@ -1,17 +1,9 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readPrompt } from "../../utils/prompts.ts";
+import type { VerifyResult } from "../types.ts";
 
-const PROMPTS_PATH = process.env.PROMPTS_PATH ?? join(process.cwd(), "prompts.json");
-const prompts = JSON.parse(readFileSync(PROMPTS_PATH, "utf8"));
-
-export const IMPLEMENT_SYSTEM_PROMPT: string = prompts.implementation.system;
-export const RETRY_NOTICE: string = prompts.implementation.retryNotice;
-
-export interface VerifyResult {
-  verifyPassed: boolean;
-  verifyOutput: string;
-  changeSummary: string;
-}
+export const IMPLEMENT_SYSTEM_PROMPT: string = readPrompt("implementation", "system");
+export const PLAN_SYSTEM_PROMPT: string = readPrompt("implementation", "plan");
+export const RETRY_NOTICE: string = readPrompt("implementation", "retryNotice");
 
 export function parseVerifyResult(raw: string): VerifyResult {
   const match = raw.match(/\{[\s\S]*\}/);
@@ -40,7 +32,7 @@ export function getCommitEmoji(issueType: string): string {
 }
 
 export function buildPrBody(args: {
-  issueKey: string; summary: string; guessedRepo: string;
+  issueKey: string; summary: string;
 }): string {
   const lines = [
     `## ${args.issueKey}`,

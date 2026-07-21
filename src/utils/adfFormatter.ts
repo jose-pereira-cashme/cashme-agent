@@ -1,25 +1,5 @@
-interface TextNode {
-  type: "text";
-  text: string;
-}
-
-interface MentionNode {
-  type: "mention";
-  attrs: { id: string; text: string };
-}
-
-type InlineNode = TextNode | MentionNode;
-
-interface ParagraphNode {
-  type: "paragraph";
-  content: InlineNode[];
-}
-
-export interface AdfDocument {
-  version: 1;
-  type: "doc";
-  content: ParagraphNode[];
-}
+import type { TextNode, MentionNode, InlineNode, ParagraphNode, AdfDocument } from "./types.ts";
+import type { RepoOutcome } from "../operations/types.ts";
 
 export function text(value: string): TextNode {
   return { type: "text", text: value };
@@ -54,17 +34,31 @@ export function buildFailureComment(args: {
   );
 }
 
-export function buildSuccessComment(args: {
-  prUrl: string;
-  summary: string;
+export function buildMultiRepoComment(args: {
+  results: RepoOutcome[];
+  reporterAccountId: string | null;
+  reporterName: string | null;
 }): AdfDocument {
-  const paragraphs: ParagraphNode[] = [
-    paragraph(text("A automação concluiu esta tarefa e abriu um pull request.")),
-    paragraph(text(`Resumo: ${args.summary}`)),
-    paragraph(text(`Pull request: ${args.prUrl}`)),
-  ];
+  const succeeded = args.results.filter((r) => r.prUrl);
+  const failed = args.results.filter((r) => !r.prUrl);
 
-  return doc(...paragraphs);
+  const intro: InlineNode[] = [];
+  if (failed.length > 0 && args.reporterAccountId) {
+    intro.push(mention(args.reporterAccountId, args.reporterName), text(" "));
+  }
+  intro.push(text(
+    succeeded.length > 0
+      ? "A automação processou esta tarefa nos repositórios abaixo:"
+      : "A automação não conseguiu concluir esta tarefa em nenhum repositório:",
+  ));
+
+  const lines: ParagraphNode[] = args.results.map((r) =>
+    r.prUrl
+      ? paragraph(text(`✅ ${r.repo}: ${r.summary ? `${r.summary} — ` : ""}${r.prUrl}`))
+      : paragraph(text(`❌ ${r.repo}: ${r.reason ?? "falha desconhecida"}`)),
+  );
+
+  return doc(paragraph(...intro), ...lines);
 }
 
 export function buildResearchComment(findings: string): AdfDocument {

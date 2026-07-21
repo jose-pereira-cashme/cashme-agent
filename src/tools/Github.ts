@@ -1,12 +1,7 @@
 import { run } from "../utils/exec.ts";
+import type { GithubClient } from "./types.ts";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-
-export interface GithubClient {
-  createPr(args: {
-    cwd: string; base: string; head: string; title: string; body: string;
-  }): Promise<string>;
-}
 
 export function Github(): GithubClient {
   const env = { GH_TOKEN: GITHUB_TOKEN };

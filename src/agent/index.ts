@@ -1,26 +1,17 @@
-import { ClaudeAgent, type AgentRunner } from "./Claude.ts";
+import { ClaudeAgent } from "./Claude.ts";
+import type { AgentRunner, RunOptions, AgentClient } from "./types.ts";
 
 const AGENT_PROVIDER = process.env.AGENT_PROVIDER ?? "claude";
 
-interface ImplementOptions {
-  prompt: string;
-  systemPrompt: string;
-  cwd: string;
-  allowedTools?: string[];
-}
+// Read-only toolset for the plan step: inspect the repos and look things up on
+// the web, nothing that can mutate the filesystem. Bash is deliberately left out
+// — it's a write vector (and how the agent used to smuggle a plan file to disk).
+const PLAN_TOOLS = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"];
 
-interface ResearchOptions {
-  prompt: string;
-  systemPrompt: string;
-  allowedTools?: string[];
-}
-
-interface AgentClient {
-  query(prompt: string, systemPrompt: string, allowedTools?: string[]): Promise<string>;
-  plan(prompt: string, systemPrompt: string): Promise<string>;
-  implement(options: ImplementOptions): Promise<string>;
-  research(options: ResearchOptions): Promise<string>;
-}
+// Interactive-only tools the plan agent must never reach in a headless run:
+// spawning sub-agents, asking the user, and self-scheduling wake-ups all assume
+// a session/loop that doesn't exist here. Removed from the model's context.
+const PLAN_DISALLOWED_TOOLS = ["Agent", "Task", "AskUserQuestion", "ScheduleWakeup"];
 
 export function Agent(): AgentClient {
   const runner = resolveRunner();
@@ -29,27 +20,21 @@ export function Agent(): AgentClient {
     return runner({ prompt, systemPrompt, allowedTools });
   }
 
-  async function plan(prompt: string, systemPrompt: string) {
-    return runner({ prompt, systemPrompt, permissionMode: "plan" });
+  // Runs the agent read-only: permissionMode "dontAsk" denies any tool not in
+  // the read-only PLAN_TOOLS whitelist, so it investigates but cannot edit, run
+  // shell commands, or write files. Returns the plan as the agent's final text.
+  async function plan({ prompt, systemPrompt, cwd }: Omit<RunOptions, "allowedTools">) {
+    return runner({ prompt, systemPrompt, allowedTools: PLAN_TOOLS, disallowedTools: PLAN_DISALLOWED_TOOLS, cwd, permissionMode: "dontAsk" });
   }
 
-  // Runs the agent inside a working copy with edits + tools enabled, so it can
-  // modify files and run the project's own verification.
-  async function implement({ prompt, systemPrompt, cwd, allowedTools }: ImplementOptions) {
-    return runner({ prompt, systemPrompt, cwd, allowedTools, permissionMode: "bypassPermissions" });
-  }
-
-  // Runs the agent with tools enabled but no working copy — it investigates the
-  // repo paths named in the prompt (read-only) instead of editing a single cwd.
-  async function research({ prompt, systemPrompt, allowedTools }: ResearchOptions) {
-    return runner({ prompt, systemPrompt, allowedTools, permissionMode: "bypassPermissions" });
+  async function run({ prompt, systemPrompt, allowedTools, cwd }: RunOptions) {
+    return runner({ prompt, systemPrompt, allowedTools, cwd, permissionMode: "bypassPermissions" });
   }
 
   return {
     query,
     plan,
-    implement,
-    research,
+    run,
   };
 }
 

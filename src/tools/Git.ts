@@ -3,19 +3,11 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { run } from "../utils/exec.ts";
-import type { RepoEntry } from "./Catalog.ts";
+import type { RepoEntry } from "../types/domain.ts";
+import type { GitClient } from "./types.ts";
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
 const MIRRORS_DIR = process.env.MIRRORS_DIR ?? join(tmpdir(), "cashme-agent-mirrors");
-
-export interface GitClient {
-  ensureMirror(repo: RepoEntry): Promise<string>;
-  makeWorkingCopy(repo: RepoEntry, jobId: string): Promise<string>;
-  createBranch(cwd: string, branch: string, base: string): Promise<void>;
-  commitAll(cwd: string, message: string): Promise<void>;
-  push(cwd: string, branch: string): Promise<void>;
-  cleanup(cwd: string): Promise<void>;
-}
 
 const redact = (s: string) => s.replace(/x-access-token:[^@]+@/g, "x-access-token:***@");
 
@@ -67,15 +59,36 @@ export function Git(): GitClient {
         await git(["checkout", "-b", branch], cwd);
       }
     },
+    async diff(cwd, base) {
+      return git([
+        "diff", `${base}..HEAD`, "--", ".",
+        ":(exclude,glob)**/yarn.lock",
+        ":(exclude,glob)**/package-lock.json",
+        ":(exclude,glob)**/pnpm-lock.yaml",
+      ], cwd);
+    },
+    async status(cwd) {
+      const out = await git(["status", "--porcelain"], cwd);
+      return out.split("\n").filter(Boolean).map((line) => ({
+        // Porcelain is "XY <path>"; "??" marks an untracked file.
+        path: line.slice(3).replace(/^"|"$/g, ""),
+        untracked: line.slice(0, 2) === "??",
+      }));
+    },
+    async restoreFile(cwd, path, untracked) {
+      if (untracked) {
+        await rm(join(cwd, path), { force: true });
+      } else {
+        await git(["checkout", "HEAD", "--", path], cwd);
+      }
+    },
     async commitAll(cwd, message) {
       await git(["add", "-A"], cwd);
       await git(["-c", "user.name=cashme-agent", "-c", "user.email=agent@cashme.com.br",
         "commit", "-m", message], cwd);
     },
     async push(cwd, branch) {
-      // Force so a retry of the same ticket overwrites the automation-owned branch
-      // from a previous attempt instead of being rejected as non-fast-forward.
-      await git(["push", "--force", "-u", "origin", branch], cwd);
+      await git(["push", "--force-with-lease", "-u", "origin", branch], cwd);
     },
     async cleanup(cwd) {
       await rm(cwd, { recursive: true, force: true });

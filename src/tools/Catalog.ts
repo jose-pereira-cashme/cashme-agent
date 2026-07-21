@@ -1,19 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { RepoEntry } from "../types/domain.ts";
+import type { CatalogClient } from "./types.ts";
 
 const CATALOG_PATH = process.env.CATALOG_PATH ?? join(process.cwd(), "catalog.json");
-
-export interface RepoEntry {
-  name: string;
-  description: string;
-  url: string;
-  defaultBranch: string;
-}
-
-export interface CatalogClient {
-  repos: RepoEntry[];
-  findRepo(name: string | undefined): RepoEntry | null;
-}
 
 export function Catalog(): CatalogClient {
   const raw = readFileSync(CATALOG_PATH, "utf8");

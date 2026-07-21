@@ -1,20 +1,21 @@
 const JIRA_EMAIL = process.env.JIRA_EMAIL
 const JIRA_API_KEY = process.env.JIRA_API_KEY
 const JIRA_URL = process.env.JIRA_URL
+import type { JiraClient } from "./types.ts";
 
-interface JiraIssue {
-  key: string;
-  summary: string;
-  description: string;
-  issueType: string;
-  reporterAccountId: string | null;
-  reporterDisplayName: string | null;
-}
+// Extract readable plain text from a Jira ADF document (comment bodies are ADF).
+function adfToText(node: any): string {
+  if (!node) return "";
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(adfToText).join("");
 
-interface JiraClient {
-  getIssue(key: string): Promise<JiraIssue>;
-  addComment(key: string, comment: object): Promise<void>;
-  transitionIssue(key: string, status: string): Promise<void>;
+  let text = "";
+  if (node.type === "text") text += node.text ?? "";
+  else if (node.type === "mention") text += node.attrs?.text ?? "";
+  else if (node.type === "hardBreak") text += "\n";
+  if (node.content) text += adfToText(node.content);
+  if (["paragraph", "heading", "listItem", "blockquote"].includes(node.type)) text += "\n";
+  return text;
 }
 
 export function Jira(): JiraClient {
@@ -35,9 +36,16 @@ export function Jira(): JiraClient {
   }
 
   async function getIssue(key: string) {
-    const data = await call(`/rest/api/3/issue/${key}?fields=summary,description,issuetype,reporter`);
+    const data = await call(`/rest/api/3/issue/${key}?fields=summary,description,issuetype,reporter,comment`);
     const issueFields = data.fields ?? {};
     const description = typeof issueFields.description === "string" ? issueFields.description : JSON.stringify(issueFields.description ?? "");
+    const comments = (issueFields.comment?.comments ?? [])
+      .map((c: any) => {
+        const author = c.author?.displayName ?? "unknown";
+        const body = (typeof c.body === "string" ? c.body : adfToText(c.body)).trim();
+        return `[${author}] ${body}`;
+      })
+      .join("\n\n");
 
     return {
         key: data.key,
@@ -46,7 +54,15 @@ export function Jira(): JiraClient {
         issueType: issueFields.issuetype?.name ?? "Task",
         reporterAccountId: issueFields.reporter?.accountId ?? null,
         reporterDisplayName: issueFields.reporter?.displayName ?? null,
+        comments,
     };
+  }
+
+  async function getRemoteLinks(key: string): Promise<string[]> {
+    const data = await call(`/rest/api/3/issue/${key}/remotelink`);
+    return (data ?? [])
+      .map((link: any) => link.object?.url)
+      .filter((url: unknown): url is string => typeof url === "string");
   }
 
   async function addComment(key: string, comment: object) {
@@ -73,6 +89,7 @@ export function Jira(): JiraClient {
 
   return {
     getIssue,
+    getRemoteLinks,
     addComment,
     transitionIssue
   }
