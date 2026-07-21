@@ -1,7 +1,5 @@
-const JIRA_EMAIL = process.env.JIRA_EMAIL
-const JIRA_API_KEY = process.env.JIRA_API_KEY
-const JIRA_URL = process.env.JIRA_URL
 import type { JiraClient } from "./types.ts";
+import { config } from "../config.ts";
 
 // Extract readable plain text from a Jira ADF document (comment bodies are ADF).
 function adfToText(node: any): string {
@@ -19,7 +17,7 @@ function adfToText(node: any): string {
 }
 
 export function Jira(): JiraClient {
-  const auth = Buffer.from(`${JIRA_EMAIL}:${JIRA_API_KEY}`).toString("base64");
+  const auth = Buffer.from(`${config.jira.email}:${config.jira.apiKey}`).toString("base64");
   const headers = {
     Authorization: `Basic ${auth}`,
     Accept: "application/json",
@@ -27,7 +25,7 @@ export function Jira(): JiraClient {
   };
 
   async function call(path: string, init: RequestInit = {}): Promise<any> {
-    const res = await fetch(`${JIRA_URL}${path}`, {
+    const res = await fetch(`${config.jira.url}${path}`, {
       ...init,
       headers: { ...headers, ...(init.headers ?? {}) },
     });

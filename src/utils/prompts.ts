@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-
-const PROMPTS_DIR = process.env.PROMPTS_DIR ?? join(process.cwd(), "prompts");
+import { config } from "../config.ts";
 
 export function readPrompt(area: string, key: string): string {
-  return readFileSync(join(PROMPTS_DIR, area, `${key}.md`), "utf8").trim();
+  return readFileSync(join(config.promptsDir, area, `${key}.md`), "utf8").trim();
 }

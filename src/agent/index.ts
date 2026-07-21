@@ -1,7 +1,6 @@
 import { ClaudeAgent } from "./Claude.ts";
 import type { AgentRunner, RunOptions, AgentClient } from "./types.ts";
-
-const AGENT_PROVIDER = process.env.AGENT_PROVIDER ?? "claude";
+import { config } from "../config.ts";
 
 // Read-only toolset for the plan step: inspect the repos and look things up on
 // the web, nothing that can mutate the filesystem. Bash is deliberately left out
@@ -39,7 +38,7 @@ export function Agent(): AgentClient {
 }
 
 function resolveRunner(): AgentRunner {
-  switch (AGENT_PROVIDER) {
+  switch (config.agentProvider) {
     case "claude":
       return ClaudeAgent();
     // Other providers not implemented.

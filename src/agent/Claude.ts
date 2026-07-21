@@ -1,7 +1,6 @@
 import { query } from "@anthropic-ai/claude-agent-sdk";
 import type { AgentRunner } from "./types.ts";
-
-const CLAUDE_API_KEY = process.env.ANTHROPIC_API_KEY
+import { config } from "../config.ts";
 
 function describeToolUse(name: string, input: unknown): string {
     const obj = (input ?? {}) as Record<string, unknown>;
@@ -26,7 +25,7 @@ export function ClaudeAgent(): AgentRunner {
                 skills: 'all',
                 effort: 'medium',
                 model: 'sonnet',
-                env: { ...process.env, ANTHROPIC_API_KEY: CLAUDE_API_KEY, CLAUDE_CODE_MAX_RETRIES: "2" },
+                env: { ...process.env, ANTHROPIC_API_KEY: config.anthropicApiKey, CLAUDE_CODE_MAX_RETRIES: "2" },
             },
         })) {
             if (message.type === "assistant") {

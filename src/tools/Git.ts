@@ -5,9 +5,7 @@ import { tmpdir } from "node:os";
 import { run } from "../utils/exec.ts";
 import type { RepoEntry } from "../types/domain.ts";
 import type { GitClient } from "./types.ts";
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
-const MIRRORS_DIR = process.env.MIRRORS_DIR ?? join(tmpdir(), "cashme-agent-mirrors");
+import { config } from "../config.ts";
 
 const redact = (s: string) => s.replace(/x-access-token:[^@]+@/g, "x-access-token:***@");
 
@@ -21,11 +19,11 @@ export function Git(): GitClient {
   }
 
   function authUrl(url: string): string {
-    return url.replace("https://github.com/", `https://x-access-token:${GITHUB_TOKEN}@github.com/`);
+    return url.replace("https://github.com/", `https://x-access-token:${config.github.token}@github.com/`);
   }
 
   function mirrorPath(repo: RepoEntry): string {
-    return join(MIRRORS_DIR, `${repo.name}.git`);
+    return join(config.mirrorsDir, `${repo.name}.git`);
   }
 
   async function remoteBranchExists(cwd: string, branch: string): Promise<boolean> {

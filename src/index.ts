@@ -1,9 +1,7 @@
 import express from 'express'
 import { handleWebhook } from './operations/HandleWebhook.ts';
 import { createQueue } from './queue.ts';
-
-const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET
-const PORT = process.env.PORT || 3000
+import { config } from './config.ts';
 
 const app = express();
 app.use(express.json());
@@ -18,7 +16,7 @@ app.post("/webhook/agent", (req, res) => {
   const secretHeader = req.header("X-Webhook-Secret")
   const { issueKey } = req.body
 
-  if (secretHeader !== WEBHOOK_SECRET) {
+  if (secretHeader !== config.webhookSecret) {
     return res.status(401).json({ error: "unauthorized" });
   }
 
@@ -31,6 +29,6 @@ app.post("/webhook/agent", (req, res) => {
   return res.status(202).json({ status: "queued", issueKey });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`)
+app.listen(config.port, () => {
+  console.log(`Server is running on http://localhost:${config.port}`)
 })

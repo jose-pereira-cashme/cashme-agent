@@ -1,10 +1,9 @@
 import { run } from "../utils/exec.ts";
 import type { GithubClient } from "./types.ts";
-
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN ?? "";
+import { config } from "../config.ts";
 
 export function Github(): GithubClient {
-  const env = { GH_TOKEN: GITHUB_TOKEN };
+  const env = { GH_TOKEN: config.github.token };
 
   return {
     async createPr({ cwd, base, head, title, body }) {

@@ -16,9 +16,8 @@ import {
   parseVerifyResult,
 } from "./utils.ts";
 import type { RepoOutcome, PreparedRepo, SiblingDiff, VerifyResult } from "../types.ts";
+import { config } from "../../config.ts";
 
-const MAX_VERIFY_ATTEMPTS = Number(process.env.MAX_VERIFY_ATTEMPTS ?? 3);
-const JIRA_REVIEW_STATUS = process.env.JIRA_REVIEW_STATUS ?? "Em revisão";
 // Cap each sibling diff handed to a later repo's implement run, so a large
 // change doesn't blow up the prompt.
 const SIBLING_DIFF_LIMIT = 8000;
@@ -79,7 +78,7 @@ export async function processImplementation(issue: JiraIssue, analyses: AgentAna
 
     if (opened > 0) {
       try {
-        await jira.transitionIssue(issue.key, JIRA_REVIEW_STATUS);
+        await jira.transitionIssue(issue.key, config.jiraReviewStatus);
       } catch {
         // Best-effort — at least one PR is open, so a transition failure is non-fatal.
         log("transition failed (non-fatal — PRs already opened)");
@@ -139,7 +138,7 @@ async function implementRepo(ctx: {
     let result = await implementAndVerify(agent, issue, cwd, userPrompt, plan, siblingDiffs, null);
     log(`[${repo.name}] attempt 1: verify ${result.verifyPassed ? "PASSED" : "FAILED"}`);
     let attempt = 1;
-    while (!result.verifyPassed && attempt < MAX_VERIFY_ATTEMPTS) {
+    while (!result.verifyPassed && attempt < config.maxVerifyAttempts) {
       attempt++;
       result = await implementAndVerify(agent, issue, cwd, userPrompt, plan, siblingDiffs, result.verifyOutput);
       log(`[${repo.name}] attempt ${attempt}: verify ${result.verifyPassed ? "PASSED" : "FAILED"}`);
@@ -148,7 +147,7 @@ async function implementRepo(ctx: {
     if (!result.verifyPassed) {
       return {
         repo: repo.name,
-        reason: `verificação falhou após ${MAX_VERIFY_ATTEMPTS} tentativas:\n${result.verifyOutput}`.slice(0, 1000),
+        reason: `verificação falhou após ${config.maxVerifyAttempts} tentativas:\n${result.verifyOutput}`.slice(0, 1000),
       };
     }
 
