@@ -11,11 +11,6 @@ export interface RunOptions {
   env?: Record<string, string | undefined>;
 }
 
-/**
- * Run an external command and capture its output. Never rejects on a non-zero
- * exit code — callers inspect `code` and decide what to do (this mirrors how
- * Git/GitHub ops want to react to specific failures, e.g. "PR already exists").
- */
 export function run(cmd: string, args: string[], options: RunOptions = {}): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, {
