@@ -22,7 +22,7 @@ function optional(name: string, fallback: string): string {
   return value === undefined || value === "" ? fallback : value;
 }
 
-const webhookSecret = required("WEBHOOK_SECRET");
+const agentSecret = required("AGENT_SECRET");
 const anthropicApiKey = required("ANTHROPIC_API_KEY");
 const jiraEmail = required("JIRA_EMAIL");
 const jiraApiKey = required("JIRA_API_KEY");
@@ -35,7 +35,7 @@ if (missing.length > 0) {
 
 export const config = Object.freeze({
   port: Number(optional("PORT", "3000")),
-  webhookSecret,
+  agentSecret,
   anthropicApiKey,
   agentProvider: optional("AGENT_PROVIDER", "claude"),
   jira: Object.freeze({ email: jiraEmail, apiKey: jiraApiKey, url: jiraUrl }),

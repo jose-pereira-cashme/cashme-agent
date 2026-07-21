@@ -1,22 +1,22 @@
 import express from 'express'
-import { handleWebhook } from './operations/HandleWebhook.ts';
+import { handleAgentRequest } from './operations/HandleAgentRequest.ts';
 import { createQueue } from './queue.ts';
 import { config } from './config.ts';
 
 const app = express();
 app.use(express.json());
 
-const queue = createQueue(handleWebhook);
+const queue = createQueue(handleAgentRequest);
 
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-app.post("/webhook/agent", (req, res) => {
-  const secretHeader = req.header("X-Webhook-Secret")
+app.post("/agent", (req, res) => {
+  const secretHeader = req.header("X-Agent-Secret")
   const { issueKey } = req.body
 
-  if (secretHeader !== config.webhookSecret) {
+  if (secretHeader !== config.agentSecret) {
     return res.status(401).json({ error: "unauthorized" });
   }
 

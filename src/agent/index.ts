@@ -1,6 +1,5 @@
 import { ClaudeAgent } from "./Claude.ts";
 import type { AgentRunner, RunOptions, AgentClient } from "./types.ts";
-import { config } from "../config.ts";
 
 const PLAN_TOOLS = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"];
 
@@ -32,11 +31,7 @@ export function Agent(): AgentClient {
 }
 
 function resolveRunner(): AgentRunner {
-  switch (config.agentProvider) {
-    case "claude":
-      return ClaudeAgent();
-    // Other providers not implemented.
-    default:
-      return ClaudeAgent();
-  }
+  // Only the Claude runner is implemented today. When a second provider is
+  // added, branch on config.agentProvider here.
+  return ClaudeAgent();
 }

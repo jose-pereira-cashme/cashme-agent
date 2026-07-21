@@ -6,8 +6,8 @@ import { processImplementation } from "./implementation/index.ts";
 import { processResearch } from "./research/index.ts";
 import type { JiraIssue, AgentAnalyses } from "../types/domain.ts";
 
-export async function handleWebhook(issueKey: string) {
-    const log = (msg: string) => console.log(`[webhook ${issueKey}] ${msg}`);
+export async function handleAgentRequest(issueKey: string) {
+    const log = (msg: string) => console.log(`[agent ${issueKey}] ${msg}`);
     const JiraClient = Jira()
 
     let issue: JiraIssue
