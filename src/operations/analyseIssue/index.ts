@@ -2,6 +2,7 @@ import type { AgentAnalyses, JiraIssue } from "../../types/domain.ts";
 import { Catalog } from "../../tools/Catalog.ts";
 import { Agent } from "../../agent/index.ts";
 import { readPrompt } from "../../utils/prompts.ts";
+import { parseAgentJson } from "../../utils/parseAgentJson.ts";
 
 const TRIAGE_SYSTEM_PROMPT: string = readPrompt("triage", "system");
 const TRIAGE_INSTRUCTIONS: string = readPrompt("triage", "instructions");
@@ -32,11 +33,10 @@ export async function analyseIssue(issue: JiraIssue): Promise<AgentAnalyses> {
 }
 
 function parseAnalyses(raw: string): AgentAnalyses {
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
+  const parsed = parseAgentJson(raw);
+  if (!parsed) {
     throw new Error(`agent returned no JSON classification:\n${raw}`.slice(0, 1000));
   }
-  const parsed = JSON.parse(match[0]);
   const taskType: AgentAnalyses["taskType"] =
     parsed.taskType === "implementation" || parsed.taskType === "research" ? parsed.taskType : "other";
 

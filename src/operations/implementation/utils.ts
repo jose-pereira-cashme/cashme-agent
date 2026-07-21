@@ -1,4 +1,5 @@
 import { readPrompt } from "../../utils/prompts.ts";
+import { parseAgentJson } from "../../utils/parseAgentJson.ts";
 import type { VerifyResult } from "../types.ts";
 
 export const IMPLEMENT_SYSTEM_PROMPT: string = readPrompt("implementation", "system");
@@ -6,20 +7,15 @@ export const PLAN_SYSTEM_PROMPT: string = readPrompt("implementation", "plan");
 export const RETRY_NOTICE: string = readPrompt("implementation", "retryNotice");
 
 export function parseVerifyResult(raw: string): VerifyResult {
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
+  const parsed = parseAgentJson(raw);
+  if (!parsed) {
     return { verifyPassed: false, verifyOutput: `agent returned no JSON result:\n${raw}`.slice(0, 3000), changeSummary: "" };
   }
-  try {
-    const parsed = JSON.parse(match[0]);
-    return {
-      verifyPassed: parsed.verifyPassed === true,
-      verifyOutput: String(parsed.verifyOutput ?? ""),
-      changeSummary: String(parsed.changeSummary ?? ""),
-    };
-  } catch {
-    return { verifyPassed: false, verifyOutput: `could not parse agent result:\n${raw}`.slice(0, 3000), changeSummary: "" };
-  }
+  return {
+    verifyPassed: parsed.verifyPassed === true,
+    verifyOutput: String(parsed.verifyOutput ?? ""),
+    changeSummary: String(parsed.changeSummary ?? ""),
+  };
 }
 
 export function issueKeyToBranch(key: string, issueType: string): string {
