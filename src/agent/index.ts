@@ -2,9 +2,6 @@ import { ClaudeAgent } from "./Claude.ts";
 import type { AgentRunner, RunOptions, AgentClient } from "./types.ts";
 import { config } from "../config.ts";
 
-// Read-only toolset for the plan step: inspect the repos and look things up on
-// the web, nothing that can mutate the filesystem. Bash is deliberately left out
-// — it's a write vector (and how the agent used to smuggle a plan file to disk).
 const PLAN_TOOLS = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"];
 
 // Interactive-only tools the plan agent must never reach in a headless run:
@@ -19,9 +16,6 @@ export function Agent(): AgentClient {
     return runner({ prompt, systemPrompt, allowedTools });
   }
 
-  // Runs the agent read-only: permissionMode "dontAsk" denies any tool not in
-  // the read-only PLAN_TOOLS whitelist, so it investigates but cannot edit, run
-  // shell commands, or write files. Returns the plan as the agent's final text.
   async function plan({ prompt, systemPrompt, cwd }: Omit<RunOptions, "allowedTools">) {
     return runner({ prompt, systemPrompt, allowedTools: PLAN_TOOLS, disallowedTools: PLAN_DISALLOWED_TOOLS, cwd, permissionMode: "dontAsk" });
   }

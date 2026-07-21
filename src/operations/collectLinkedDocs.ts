@@ -3,11 +3,6 @@ import { Confluence } from "../tools/Confluence.ts";
 import { extractConfluencePageIds } from "../utils/confluenceLinks.ts";
 import type { JiraIssue } from "../types/domain.ts";
 
-/**
- * Collects the text of any Confluence pages linked from a Jira issue — both via
- * the issue's remote links and via URLs mentioned in its description — and
- * returns them as a single markdown block (empty string when none are found).
- */
 export async function collectLinkedDocs(issue: JiraIssue): Promise<string> {
   const jira = Jira();
   const confluence = Confluence();

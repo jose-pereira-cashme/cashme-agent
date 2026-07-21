@@ -33,8 +33,6 @@ export function ClaudeAgent(): AgentRunner {
                 for (const block of message.message.content) {
                     if (block.type === "text") text += block.text;
                     if (block.type === "tool_use") {
-                        // Log every tool call so installs / shell commands the
-                        // agent runs are visible (e.g. an unexpected `yarn add`).
                         console.log(`[agent tool] ${block.name} ${describeToolUse(block.name, block.input)}`);
                     }
                 }

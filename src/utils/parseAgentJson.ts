@@ -1,9 +1,3 @@
-// Agents reply in free text that usually contains one JSON object. This finds
-// the FIRST complete top-level object (matching braces, string-aware) and parses
-// it. Returns null when there's no object or it doesn't parse — callers decide
-// how to handle that. Preferred over a greedy /\{[\s\S]*\}/ match, which spans
-// from the first "{" to the last "}" and breaks on braces in prose or a second
-// object.
 export function parseAgentJson(raw: string): Record<string, unknown> | null {
   const start = raw.indexOf("{");
   if (start === -1) return null;
