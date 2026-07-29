@@ -40,4 +40,6 @@ When finished, respond with ONLY a single JSON object — no markdown fences, no
 
 - `verifyPassed` — whether verification succeeded
 - `verifyOutput` — the relevant build/test output, truncated to the essentials
-- `changeSummary` — a one-line imperative summary of what changed
+- `changeSummary` — a one-line imperative summary of what changed, **written in
+  Brazilian Portuguese** (it is published to Jira and to the PR body). Keep
+  identifiers, file paths, and commands in their original form.
