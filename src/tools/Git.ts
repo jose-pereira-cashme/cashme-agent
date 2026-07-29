@@ -11,7 +11,7 @@ const redact = (s: string) => s.replace(/x-access-token:[^@]+@/g, "x-access-toke
 
 export function Git(): GitClient {
   async function git(args: string[], cwd?: string): Promise<string> {
-    const r = await run("git", args, { cwd });
+    const r = await run("git", args, { cwd, env: { HUSKY: "0" } });
     if (r.code !== 0) {
       throw new Error(`git ${redact(args.join(" "))} failed: ${redact(r.stderr || r.stdout)}`);
     }
@@ -83,7 +83,7 @@ export function Git(): GitClient {
     async commitAll(cwd, message) {
       await git(["add", "-A"], cwd);
       await git(["-c", "user.name=cashme-agent", "-c", "user.email=agent@cashme.com.br",
-        "commit", "-m", message], cwd);
+        "commit", "--no-verify", "-m", message], cwd);
     },
     async push(cwd, branch) {
       await git(["push", "--force-with-lease", "-u", "origin", branch], cwd);

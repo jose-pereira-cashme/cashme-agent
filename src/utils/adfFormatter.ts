@@ -61,13 +61,23 @@ export function buildMultiRepoComment(args: {
   return doc(paragraph(...intro), ...lines);
 }
 
-export function buildResearchComment(findings: string): AdfDocument {
+export function buildResearchComment(args: {
+  findings: string;
+  reporterAccountId: string | null;
+  reporterName: string | null;
+}): AdfDocument {
+  const intro: InlineNode[] = [];
+  if (args.reporterAccountId) {
+    intro.push(mention(args.reporterAccountId, args.reporterName), text(" "));
+  }
+
   // Split the markdown findings into blocks so each becomes its own paragraph.
   // Empty text nodes are rejected by Jira, so blanks are filtered out.
-  const blocks = findings.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
+  const blocks = args.findings.split(/\n{2,}/).map((b) => b.trim()).filter(Boolean);
   const body = blocks.length > 0 ? blocks : ["(sem resultados)"];
 
   return doc(
+    paragraph(...intro),
     paragraph(text("Resultado da investigação:")),
     ...body.map((block) => paragraph(text(block))),
   );
