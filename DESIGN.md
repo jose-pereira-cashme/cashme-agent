@@ -146,15 +146,17 @@ reportando:
    diff de cada repositório pronto é passado como dica para os repositórios
    irmãos, para as mudanças replicadas ficarem consistentes. Quando dá certo, as
    mudanças recebem commit (mudança só de lockfile é revertida quando não houve
-   mudança de dependência), são enviadas com `--force-with-lease` e um PR é aberto
-   (se já existe um PR na branch, ele é reaproveitado). Em seguida os mesmos
-   commits são **replicados** para cada base extra (`develop`, `qa` — lista fixa
-   em `src/config.ts`, porque reflete o fluxo de git dos repositórios e não uma
-   configuração de deploy): uma branch nova a partir de `origin/<base>`, cherry-pick dos
-   commits da branch principal, push e um PR por base — o nome da branch recebe o
-   sufixo da base (`feature/cash-123-develop`). Base que não existe no remoto é
+   mudança de dependência) e a branch de trabalho é enviada com
+   `--force-with-lease` — **sem PR contra a branch padrão**: ela não é destino de
+   merge, só a origem dos commits. Em seguida os mesmos commits são
+   **replicados** para cada base extra (`develop`, `qa` — lista fixa em
+   `src/config.ts`, porque reflete o fluxo de git dos repositórios e não uma
+   configuração de deploy): uma branch nova a partir de `origin/<base>`,
+   cherry-pick dos commits da branch de trabalho, push e **um PR por base** — o
+   nome da branch recebe o sufixo da base (`feature/cash-123-develop`). Se já
+   existe um PR na branch, ele é reaproveitado. Base que não existe no remoto é
    ignorada; conflito de cherry-pick vira falha registrada só daquela base, sem
-   afetar o PR principal.
+   afetar as outras.
 4. **Reportar** — um comentário com o resumo é postado no ticket e, se algum PR
    foi aberto, o ticket é movido para o status de revisão.
 
@@ -243,8 +245,8 @@ flowchart TD
   I --> P[Preparar repos: mirror + cópia de trabalho + branch]
   P --> PL[Plano somente leitura entre os repos]
   PL --> IV[Loop de implementar e verificar por repo]
-  IV --> PRc[Commit, push e abrir PR na base padrão]
-  PRc --> RP[Replicar os commits nas bases extras: uma branch e um PR por base]
+  IV --> PRc[Commit e push da branch de trabalho, sem PR]
+  PRc --> RP[Replicar os commits nas bases: uma branch e um PR por base]
   RP --> RPT[Comentar no Jira e mover para revisão]
   R --> RS[Investigar somente leitura]
   RS --> RC[Postar resultados no Jira]
