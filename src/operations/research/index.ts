@@ -34,7 +34,7 @@ export async function processResearch(issue: JiraIssue, analyses: AgentAnalyses)
     }
 
     const findings = await research(agent, issue, repoPaths, analyses.userPrompt);
-    await jira.addComment(issue.key, buildResearchComment(findings));
+    await jira.addComment(issue.key, buildResearchComment({findings, reporterAccountId: issue.reporterAccountId, reporterName: issue.reporterDisplayName}));
     log("SUCCESS — research done");
   } catch (err) {
     log(`ERROR: ${(err as Error).message}`);
