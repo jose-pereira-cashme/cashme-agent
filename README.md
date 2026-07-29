@@ -83,6 +83,7 @@ src/
 ├── queue.ts          fila serial em memória, deduplicada por issueKey
 ├── config.ts         variáveis de ambiente, validadas no boot
 ├── operations/       o fluxo: contexto → triagem → implementação ou pesquisa
+│   └── implementation/  uma fase por arquivo: prepare, plan, implementRepo, replicate
 ├── agent/            camada fina sobre o Claude Agent SDK
 ├── tools/            Jira, Confluence, Git, Github (gh) e Catalog
 └── utils/            ADF, exec, parsing, links e leitura de prompts
