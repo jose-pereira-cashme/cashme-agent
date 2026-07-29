@@ -15,6 +15,10 @@ export type GitClient = {
   status(cwd: string): Promise<Array<{ path: string; untracked: boolean }>>;
   restoreFile(cwd: string, path: string, untracked: boolean): Promise<void>;
   commitAll(cwd: string, message: string): Promise<void>;
+  hasRemoteBranch(cwd: string, branch: string): Promise<boolean>;
+  replicateCommits(cwd: string, args: {
+    branch: string; base: string; fromRef: string; fromBase: string;
+  }): Promise<void>;
   push(cwd: string, branch: string): Promise<void>;
   cleanup(cwd: string): Promise<void>;
 };

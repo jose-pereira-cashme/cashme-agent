@@ -66,10 +66,18 @@ export function buildMultiRepoComment(args: {
       : "A automação não conseguiu concluir esta tarefa em nenhum repositório:",
   ));
 
-  const lines: ParagraphNode[] = args.results.map((r) =>
+  // One line per repo, plus one line per replicated base (develop, qa, …).
+  const lines: ParagraphNode[] = args.results.flatMap((r) =>
     r.prUrl
-      ? paragraph(text(`✅ ${r.repo}: ${r.summary ? `${r.summary} — ` : ""}${r.prUrl}`))
-      : paragraph(text(`❌ ${r.repo}: ${r.reason ?? "falha desconhecida"}`)),
+      ? [
+        paragraph(text(`✅ ${r.repo}: ${r.summary ? `${r.summary} — ` : ""}${r.prUrl}`)),
+        ...(r.replicas ?? []).map((replica) => paragraph(text(
+          replica.prUrl
+            ? `↳ ${replica.base}: ${replica.prUrl}`
+            : `↳ ${replica.base}: ❌ ${replica.reason ?? "falha desconhecida"}`,
+        ))),
+      ]
+      : [paragraph(text(`❌ ${r.repo}: ${r.reason ?? "falha desconhecida"}`))],
   );
 
   return commentDoc(paragraph(...intro), ...lines);
