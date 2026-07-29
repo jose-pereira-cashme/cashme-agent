@@ -165,7 +165,7 @@ async function implementRepo(ctx: {
       cwd,
       base,
       head: branch,
-      title: `${issue.key}: ${issue.summary}`,
+      title: `${branch} - Cashme Agent(IA)`,
       body: buildPrBody({ issueKey: issue.key, summary: result.changeSummary }),
     });
     log(`[${repo.name}] PR ready: ${prUrl}`);

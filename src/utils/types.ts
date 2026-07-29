@@ -1,6 +1,11 @@
+export type Mark = {
+  type: "em";
+};
+
 export type TextNode = {
   type: "text";
   text: string;
+  marks?: Mark[];
 };
 
 export type MentionNode = {
@@ -15,8 +20,14 @@ export type ParagraphNode = {
   content: InlineNode[];
 };
 
+export type RuleNode = {
+  type: "rule";
+};
+
+export type BlockNode = ParagraphNode | RuleNode;
+
 export type AdfDocument = {
   version: 1;
   type: "doc";
-  content: ParagraphNode[];
+  content: BlockNode[];
 };
