@@ -22,6 +22,8 @@ function optional(name: string, fallback: string): string {
   return value === undefined || value === "" ? fallback : value;
 }
 
+const replicaBases = ["develop", "qa"];
+
 const agentSecret = required("AGENT_SECRET");
 const anthropicApiKey = required("ANTHROPIC_API_KEY");
 const jiraEmail = required("JIRA_EMAIL");
@@ -45,4 +47,5 @@ export const config = Object.freeze({
   promptsDir: optional("PROMPTS_DIR", join(process.cwd(), "prompts")),
   maxVerifyAttempts: Number(optional("MAX_VERIFY_ATTEMPTS", "3")),
   jiraReviewStatus: optional("JIRA_REVIEW_STATUS", "Em revisão"),
+  replicaBases: Object.freeze(replicaBases),
 });

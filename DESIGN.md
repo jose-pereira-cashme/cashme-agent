@@ -129,7 +129,10 @@ o código, inclua todos, a não ser que o ticket cite apenas um.
 
 ### Pipeline de implementação
 
-Para tickets de implementação, o pipeline tem quatro fases:
+Para tickets de implementação, o pipeline tem quatro fases — cada uma em seu
+próprio módulo em `src/operations/implementation/` (`prepare.ts`, `plan.ts`,
+`implementRepo.ts` + `replicate.ts`), com o `index.ts` só orquestrando e
+reportando:
 
 1. **Preparar** — para cada repositório alvo, garante um clone `--mirror` local
    (ou atualiza), cria uma cópia de trabalho nova e cria uma branch a partir do
@@ -144,7 +147,14 @@ Para tickets de implementação, o pipeline tem quatro fases:
    irmãos, para as mudanças replicadas ficarem consistentes. Quando dá certo, as
    mudanças recebem commit (mudança só de lockfile é revertida quando não houve
    mudança de dependência), são enviadas com `--force-with-lease` e um PR é aberto
-   (se já existe um PR na branch, ele é reaproveitado).
+   (se já existe um PR na branch, ele é reaproveitado). Em seguida os mesmos
+   commits são **replicados** para cada base extra (`develop`, `qa` — lista fixa
+   em `src/config.ts`, porque reflete o fluxo de git dos repositórios e não uma
+   configuração de deploy): uma branch nova a partir de `origin/<base>`, cherry-pick dos
+   commits da branch principal, push e um PR por base — o nome da branch recebe o
+   sufixo da base (`feature/cash-123-develop`). Base que não existe no remoto é
+   ignorada; conflito de cherry-pick vira falha registrada só daquela base, sem
+   afetar o PR principal.
 4. **Reportar** — um comentário com o resumo é postado no ticket e, se algum PR
    foi aberto, o ticket é movido para o status de revisão.
 
@@ -178,9 +188,10 @@ Clientes pequenos e com poucas dependências encapsulam cada sistema externo:
   comentários (ADF) e muda o status.
 - **Confluence** — busca uma página e converte o XHTML (formato storage) para
   texto.
-- **Git** — cuida dos mirrors, cria cópias de trabalho, trata branches, faz diff
-  (sem lockfiles), status, restore, commit e push com force-with-lease. Injeta o
-  token do GitHub na URL do remote e o esconde nos logs.
+- **Git** — cuida dos mirrors, cria cópias de trabalho, trata branches (inclusive
+  replicar commits em outra base via cherry-pick), faz diff (sem lockfiles),
+  status, restore, commit e push com force-with-lease. Injeta o token do GitHub
+  na URL do remote e o esconde nos logs.
 - **GitHub** — abre ou reaproveita um PR usando a CLI `gh`.
 - **Catalog** — carrega e busca repositórios no `catalog.json`.
 
@@ -232,8 +243,9 @@ flowchart TD
   I --> P[Preparar repos: mirror + cópia de trabalho + branch]
   P --> PL[Plano somente leitura entre os repos]
   PL --> IV[Loop de implementar e verificar por repo]
-  IV --> PRc[Commit, push e abrir PR]
-  PRc --> RPT[Comentar no Jira e mover para revisão]
+  IV --> PRc[Commit, push e abrir PR na base padrão]
+  PRc --> RP[Replicar os commits nas bases extras: uma branch e um PR por base]
+  RP --> RPT[Comentar no Jira e mover para revisão]
   R --> RS[Investigar somente leitura]
   RS --> RC[Postar resultados no Jira]
 ```
