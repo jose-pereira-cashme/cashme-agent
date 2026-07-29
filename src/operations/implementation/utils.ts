@@ -28,19 +28,14 @@ export function getCommitEmoji(issueType: string): string {
 }
 
 export function buildPrBody(args: {
-  issueKey: string; summary: string; base: string; replicaOf?: string;
+  issueKey: string; summary: string; base: string; sourceBranch: string;
 }): string {
-  const details = [`Base: \`${args.base}\``];
-  if (args.replicaOf) {
-    details.push(`Mesmos commits da branch \`${args.replicaOf}\`, replicados para \`${args.base}\`.`);
-  }
-
   const lines = [
     `## ${args.issueKey}`,
     "",
     args.summary,
     "",
-    ...details,
+    `Base: \`${args.base}\` — mesmos commits da branch \`${args.sourceBranch}\`.`,
     "",
     "---",
     "_Pull request aberto automaticamente pela automação cashme-agent._",

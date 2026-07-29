@@ -18,7 +18,7 @@ export async function replicateToBases(ctx: {
   const outcomes: ReplicaOutcome[] = [];
 
   for (const base of config.replicaBases) {
-    if (base === repo.defaultBranch) continue; // already covered by the primary PR
+    if (base === repo.defaultBranch) continue; // the work branch already sits on it
     if (!(await git.hasRemoteBranch(cwd, base))) {
       log(`[${repo.name}] base '${base}' not on the remote — replication skipped`);
       continue;
@@ -38,7 +38,7 @@ export async function replicateToBases(ctx: {
         base,
         head: replicaBranch,
         title: `${replicaBranch} - Cashme Agent(IA)`,
-        body: buildPrBody({ issueKey: issue.key, summary, base, replicaOf: branch }),
+        body: buildPrBody({ issueKey: issue.key, summary, base, sourceBranch: branch }),
       });
       log(`[${repo.name}] replica on ${base}: ${prUrl}`);
       outcomes.push({ base, branch: replicaBranch, prUrl });

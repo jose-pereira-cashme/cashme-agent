@@ -6,7 +6,6 @@ import { config } from "../../config.ts";
 import {
   IMPLEMENT_SYSTEM_PROMPT,
   RETRY_NOTICE,
-  buildPrBody,
   getCommitEmoji,
   parseVerifyResult,
 } from "./utils.ts";
@@ -61,22 +60,15 @@ export async function implementRepo(ctx: {
       log(`[${repo.name}] could not capture diff (non-fatal): ${(err as Error).message}`);
     }
 
+    // The work branch is pushed but gets no PR of its own — the default branch is
+    // not a merge target. It is the source the replicas are cherry-picked from.
     await git.push(cwd, branch);
-    const prUrl = await github.createPr({
-      cwd,
-      base,
-      head: branch,
-      title: `${branch} - Cashme Agent(IA)`,
-      body: buildPrBody({ issueKey: issue.key, summary: result.changeSummary, base }),
-    });
-    log(`[${repo.name}] PR ready: ${prUrl}`);
+    log(`[${repo.name}] work branch pushed: ${branch} (no PR against ${base})`);
 
-    // The work happened on top of the default branch; the same commits are copied
-    // onto the other bases so each environment gets its own branch and PR.
     const replicas = await replicateToBases({
       git, github, repo, cwd, branch, issue, summary: result.changeSummary, log,
     });
-    return { repo: repo.name, summary: result.changeSummary, prUrl, replicas, diff };
+    return { repo: repo.name, summary: result.changeSummary, branch, replicas, diff };
   } catch (err) {
     log(`[${repo.name}] ERROR: ${(err as Error).message}`);
     return { repo: repo.name, reason: `erro na automação: ${(err as Error).message}`.slice(0, 1000) };

@@ -30,7 +30,7 @@ export type ReplicaOutcome = {
 export type RepoOutcome = {
   repo: string;
   summary?: string;
-  prUrl?: string;
+  branch?: string;
   reason?: string;
   replicas?: ReplicaOutcome[];
 };

@@ -53,8 +53,8 @@ export function buildMultiRepoComment(args: {
   reporterAccountId: string | null;
   reporterName: string | null;
 }): AdfDocument {
-  const succeeded = args.results.filter((r) => r.prUrl);
-  const failed = args.results.filter((r) => !r.prUrl);
+  const succeeded = args.results.filter((r) => r.branch);
+  const failed = args.results.filter((r) => !r.branch);
 
   const intro: InlineNode[] = [];
   if (failed.length > 0 && args.reporterAccountId) {
@@ -66,11 +66,10 @@ export function buildMultiRepoComment(args: {
       : "A automação não conseguiu concluir esta tarefa em nenhum repositório:",
   ));
 
-  // One line per repo, plus one line per replicated base (develop, qa, …).
   const lines: ParagraphNode[] = args.results.flatMap((r) =>
-    r.prUrl
+    r.branch
       ? [
-        paragraph(text(`✅ ${r.repo}: ${r.summary ? `${r.summary} — ` : ""}${r.prUrl}`)),
+        paragraph(text(`✅ ${r.repo}: ${r.summary ? `${r.summary} — ` : ""}branch ${r.branch}`)),
         ...(r.replicas ?? []).map((replica) => paragraph(text(
           replica.prUrl
             ? `↳ ${replica.base}: ${replica.prUrl}`

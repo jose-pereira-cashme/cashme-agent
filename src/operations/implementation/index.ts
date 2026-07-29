@@ -47,15 +47,15 @@ export async function processImplementation(issue: JiraIssue, analyses: AgentAna
         { agent, git, github, issue, repo, cwd, branch, plan, siblingDiffs, userPrompt: analyses.userPrompt, log },
       );
       results.push(outcome);
-      if (outcome.prUrl && outcome.diff) {
+      if (outcome.branch && outcome.diff) {
         siblingDiffs.push({ repo: repo.name, diff: outcome.diff });
       }
     }
 
     // Phase 4 — report.
-    const opened = results.filter((r) => r.prUrl).length;
-    const replicated = results.reduce((n, r) => n + (r.replicas?.filter((x) => x.prUrl).length ?? 0), 0);
-    log(`done — ${opened}/${results.length} repo(s) produced a PR, ${replicated} replica PR(s)`);
+    const succeeded = results.filter((r) => r.branch).length;
+    const prs = results.reduce((n, r) => n + (r.replicas?.filter((x) => x.prUrl).length ?? 0), 0);
+    log(`done — ${succeeded}/${results.length} repo(s) implemented, ${prs} PR(s) opened`);
 
     await jira.addComment(issue.key, buildMultiRepoComment({
       results,
@@ -63,7 +63,7 @@ export async function processImplementation(issue: JiraIssue, analyses: AgentAna
       reporterName: issue.reporterDisplayName,
     }));
 
-    if (opened > 0) {
+    if (prs > 0) {
       try {
         await jira.transitionIssue(issue.key, config.jiraReviewStatus);
       } catch {
