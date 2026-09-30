@@ -8,7 +8,7 @@
     },
     {
       "name": "cashmember",
-      "description": "Portal do CashMember (Next.js) — área logada do cliente CashMe (tomador do crédito com garantia de imóvel). Compartilha o MESMO código-base que 'cashplayer' (portal dos parceiros); mudanças normalmente valem para os dois. SEMPRE inclua 'cashmember' e 'cashplayer' na tarefa, a menos que ela especifique explicitamente apenas um.",
+      "description": "Portal do CashMember (Next.js) — área logada do cliente CashMe (tomador do crédito com garantia de imóvel).",
       "url": "https://github.com/cash-me/cashmember.git",
       "defaultBranch": "master"
     },
@@ -16,18 +16,6 @@
       "name": "portal-cashmember-users",
       "description": "Módulo de usuários do portal CashMember (Next.js, pacote 'cashmember-users'). Cadastro, autenticação e gestão de contas/permissões dos membros — mexe em telas e fluxos de usuário do portal do cliente, não no portal inteiro.",
       "url": "https://github.com/cash-me/portal-cashmember-users.git",
-      "defaultBranch": "master"
-    },
-    {
-      "name": "cashplayer",
-      "description": "Portal do CashPlayer (Next.js) — área logada dos parceiros/originadores (corretores e imobiliárias) que indicam operações. Compartilha o MESMO código-base que 'cashmember' (portal do cliente); mudanças normalmente valem para os dois. SEMPRE inclua 'cashmember' e 'cashplayer' na tarefa, a menos que ela especifique explicitamente apenas um.",
-      "url": "https://github.com/cash-me/cashplayer.git",
-      "defaultBranch": "master"
-    },
-    {
-      "name": "cashplayer-users-partners",
-      "description": "Módulo de usuários e parceiros do portal CashPlayer (Next.js). Cadastro, autenticação e gestão de contas dos parceiros/originadores. Use para mudanças em usuários do CashPlayer, não no portal completo.",
-      "url": "https://github.com/cash-me/cashplayer-users-partners.git",
       "defaultBranch": "master"
     },
     {
@@ -64,6 +52,18 @@
       "name": "secme",
       "description": "Site da Secme Securitizadora (site estático em HTML/CSS/JS puro, sem framework) — portal de relações com investidores/documentos: emissões, comunicados, governança e demonstrações financeiras. Não é aplicação React/Next.",
       "url": "https://github.com/cash-me/secme.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "assets",
+      "description": "CDN de assets estáticos da CashMe — repositório que SERVE os arquivos estáticos consumidos pelos demais projetos: ícones SVG, pictogramas, imagens (avatar, cashMember, cashPlayer, e-mail, institucional, login), logos (cashme, cyrela, parceiros) e fontes (DMSans, Gilroy, Inter). Não tem código de aplicação: é só a pasta 'src' publicada por um nginx em container (Dockerfile + static.conf). Use para adicionar, substituir ou remover arquivos de asset; mudanças de UI/componente pertencem aos repos de aplicação ou ao design system.",
+      "url": "https://github.com/cash-me/assets.git",
+      "defaultBranch": "master"
+    },
+    {
+      "name": "home",
+      "description": "Site institucional LEGADO em PHP (Dockerfile + nginx) — sobrevivente da migração para Next.js. Ainda serve duas áreas de www.cashme.com.br através do gateway 'institucional-gateway': as páginas do podcast em '/construcast/' e TODOS os arquivos sob '/assets/' (ex.: '/assets/image/construcast/*.jpg', que ficam em 'src/assets/'). ATENÇÃO — não confunda os três 'assets' do site: '/assets/*' é ESTE repo; 'static.cashme.com.br/images/*' é o repo 'assets'; '/images/*' (via _next/image) é o repo 'cashme'. Use este repo para o Construcast e para qualquer arquivo servido em '/assets/'; páginas institucionais novas pertencem a 'cashme'.",
+      "url": "https://github.com/cash-me/home.git",
       "defaultBranch": "master"
     }
   ]
