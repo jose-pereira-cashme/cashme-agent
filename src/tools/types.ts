@@ -3,6 +3,7 @@ import type { JiraIssue, RepoEntry } from "../types/domain.ts";
 export type JiraClient = {
   getIssue(key: string): Promise<JiraIssue>;
   getRemoteLinks(key: string): Promise<string[]>;
+  downloadAttachment(id: string): Promise<Buffer>;
   addComment(key: string, comment: object): Promise<void>;
   transitionIssue(key: string, status: string): Promise<void>;
 };

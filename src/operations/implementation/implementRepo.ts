@@ -10,9 +10,8 @@ import {
   parseVerifyResult,
 } from "./utils.ts";
 import { replicateToBases } from "./replicate.ts";
+import { formatReferenceImages } from "../../utils/prompts.ts";
 
-// Cap each sibling diff handed to a later repo's implement run, so a large
-// change doesn't blow up the prompt.
 const SIBLING_DIFF_LIMIT = 8000;
 
 // Phase 3 — implements one repo: runs the verify-retry loop, and on success
@@ -88,6 +87,7 @@ async function implementAndVerify(
     `Jira issue ${issue.key} (${issue.issueType}): ${issue.summary}`,
     `Description:\n${issue.description}`,
     issue.linkedDocs ? `Linked documentation:\n${issue.linkedDocs}` : "",
+    formatReferenceImages(issue),
     issue.comments ? `Ticket comments (chronological):\n${issue.comments}` : "",
     `Task:\n${userPrompt}`,
     plan ? `Implementation plan (follow it unless you find it wrong):\n${plan}` : "",

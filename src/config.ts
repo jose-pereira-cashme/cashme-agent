@@ -50,6 +50,7 @@ export const config = Object.freeze({
   jira: Object.freeze({ email: jiraEmail, apiKey: jiraApiKey, url: jiraUrl }),
   github: Object.freeze({ token: githubToken }),
   mirrorsDir: optional("MIRRORS_DIR", join(tmpdir(), "cashme-agent-mirrors")),
+  attachmentsDir: optional("ATTACHMENTS_DIR", join(tmpdir(), "cashme-agent-attachments")),
   catalogPath: optional("CATALOG_PATH", join(process.cwd(), "catalog.json")),
   promptsDir: optional("PROMPTS_DIR", join(process.cwd(), "prompts")),
   maxVerifyAttempts: Number(optional("MAX_VERIFY_ATTEMPTS", "3")),

@@ -1,7 +1,7 @@
-import { Jira } from "../tools/Jira.ts";
-import { Confluence } from "../tools/Confluence.ts";
-import { extractConfluencePageIds } from "../utils/confluenceLinks.ts";
-import type { JiraIssue } from "../types/domain.ts";
+import { Jira } from "../../tools/Jira.ts";
+import { Confluence } from "../../tools/Confluence.ts";
+import { extractConfluencePageIds } from "../../utils/confluenceLinks.ts";
+import type { JiraIssue } from "../../types/domain.ts";
 
 export async function collectLinkedDocs(issue: JiraIssue): Promise<string> {
   const jira = Jira();

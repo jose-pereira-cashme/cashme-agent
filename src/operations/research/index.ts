@@ -4,6 +4,7 @@ import { Catalog } from "../../tools/Catalog.ts";
 import type { RepoEntry } from "../../types/domain.ts";
 import { Agent } from "../../agent/index.ts";
 import { buildFailureComment, buildResearchComment } from "../../utils/adfFormatter.ts";
+import { formatReferenceImages } from "../../utils/prompts.ts";
 import type { JiraIssue, AgentAnalyses } from "../../types/domain.ts";
 import {
   RESEARCH_SYSTEM_PROMPT,
@@ -64,6 +65,7 @@ async function research(
     `Research task for Jira issue ${issue.key}: ${issue.summary}`,
     `Description:\n${issue.description}`,
     issue.linkedDocs ? `Linked documentation:\n${issue.linkedDocs}` : "",
+    formatReferenceImages(issue),
     issue.comments ? `Ticket comments (chronological):\n${issue.comments}` : "",
     userPrompt ? `User request: ${userPrompt}` : "",
     repoList,

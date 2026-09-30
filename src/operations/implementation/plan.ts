@@ -2,6 +2,7 @@ import type { AgentClient } from "../../agent/types.ts";
 import type { JiraIssue } from "../../types/domain.ts";
 import type { Logger, PreparedRepo } from "../types.ts";
 import { PLAN_SYSTEM_PROMPT } from "./utils.ts";
+import { formatReferenceImages } from "../../utils/prompts.ts";
 
 // Phase 2 — produces a read-only plan spanning every prepared repo.
 // Best-effort: a failed or empty plan returns "" so implementation proceeds
@@ -21,6 +22,7 @@ export async function buildPlan(args: {
     `Jira issue ${issue.key} (${issue.issueType}): ${issue.summary}`,
     `Description:\n${issue.description}`,
     issue.linkedDocs ? `Linked documentation:\n${issue.linkedDocs}` : "",
+    formatReferenceImages(issue),
     issue.comments ? `Ticket comments (chronological):\n${issue.comments}` : "",
     `Task:\n${userPrompt}`,
     `Target repositories (read-only working copies):\n${repoList}`,

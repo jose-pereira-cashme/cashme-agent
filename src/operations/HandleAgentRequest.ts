@@ -1,6 +1,6 @@
 import { Jira } from "../tools/Jira.ts";
-import { buildFailureComment } from "../utils/adfFormatter.ts";
-import { collectLinkedDocs } from "./collectLinkedDocs.ts";
+import { buildFailureComment, buildTriageNeedsInfoComment } from "../utils/adfFormatter.ts";
+import { collectIssueContext, releaseIssueContext } from "./context/index.ts";
 import { analyseIssue } from "./analyseIssue/index.ts";
 import { processImplementation } from "./implementation/index.ts";
 import { processResearch } from "./research/index.ts";
@@ -10,39 +10,48 @@ export async function handleAgentRequest(issueKey: string) {
     const log = (msg: string) => console.log(`[agent ${issueKey}] ${msg}`);
     const JiraClient = Jira()
 
-    let issue: JiraIssue
-    try{
-        issue = await JiraClient.getIssue(issueKey)
-        log(`issue fetched — "${issue.summary}" (${issue.issueType})`);
-        issue.linkedDocs = await collectLinkedDocs(issue);
-    }catch(err) {
-        log(`ERROR fetching issue: ${(err as Error).message}`);
-        await JiraClient.addComment(issueKey, buildFailureComment({
-            reason: `erro na automação: ${(err as Error).message}`.slice(0, 3000),
-            reporterAccountId: null,
-            reporterName: null,
-        }));
-        return
-    }
-
-    let analyses: AgentAnalyses;
     try {
-        analyses = await analyseIssue(issue);
-    } catch (err) {
-        log(`ERROR analysing issue: ${(err as Error).message}`);
-        await JiraClient.addComment(issue.key, buildFailureComment({
-            reason: `erro na automação: ${(err as Error).message}`.slice(0, 3000),
-            reporterAccountId: issue.reporterAccountId,
-            reporterName: issue.reporterDisplayName,
-        }));
-        return;
-    }
+        let issue: JiraIssue
+        try{
+            issue = await JiraClient.getIssue(issueKey)
+            log(`issue fetched — "${issue.summary}" (${issue.issueType})`);
+            await collectIssueContext(issue);
+        }catch(err) {
+            log(`ERROR fetching issue: ${(err as Error).message}`);
+            await JiraClient.addComment(issueKey, buildFailureComment({
+                reason: `erro na automação: ${(err as Error).message}`.slice(0, 3000),
+                reporterAccountId: null,
+                reporterName: null,
+            }));
+            return
+        }
 
-    if (analyses.taskType === "implementation") {
-        await processImplementation(issue, analyses);
-    } else if (analyses.taskType === "research") {
-        await processResearch(issue, analyses);
-    } else {
-        log(`taskType="${analyses.taskType}" — nothing to do`);
+        let analyses: AgentAnalyses;
+        try {
+            analyses = await analyseIssue(issue);
+        } catch (err) {
+            log(`ERROR analysing issue: ${(err as Error).message}`);
+            await JiraClient.addComment(issue.key, buildFailureComment({
+                reason: `erro na automação: ${(err as Error).message}`.slice(0, 3000),
+                reporterAccountId: issue.reporterAccountId,
+                reporterName: issue.reporterDisplayName,
+            }));
+            return;
+        }
+
+        if (analyses.taskType === "implementation") {
+            await processImplementation(issue, analyses);
+        } else if (analyses.taskType === "research") {
+            await processResearch(issue, analyses);
+        } else {
+            log(`taskType="${analyses.taskType}" — asking reporter for more detail`);
+            await JiraClient.addComment(issue.key, buildTriageNeedsInfoComment({
+                triageReason: analyses.reason.slice(0, 1000),
+                reporterAccountId: issue.reporterAccountId,
+                reporterName: issue.reporterDisplayName,
+            }));
+        }
+    } finally {
+        await releaseIssueContext(issueKey);
     }
 }

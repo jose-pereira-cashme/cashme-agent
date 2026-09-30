@@ -5,8 +5,10 @@ Investigate and provide findings.
 # How to investigate
 
 - Use Read/Grep/Bash to search the code if repositories are available.
+- If the task lists **reference images**, open each path with `Read` — they are
+  part of the question, not decoration.
 - Use WebSearch/WebFetch to look up documentation, references, or anything beyond
-  the codebase.
+  the codebase, including any URL the ticket cites.
 
 # Findings style
 

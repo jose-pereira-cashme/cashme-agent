@@ -1,3 +1,10 @@
+export type JiraAttachment = {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+};
+
 export type JiraIssue = {
   key: string;
   summary: string;
@@ -6,7 +13,10 @@ export type JiraIssue = {
   reporterAccountId: string | null;
   reporterDisplayName: string | null;
   comments: string;
+  attachments: JiraAttachment[];
+  systemFields: string;
   linkedDocs?: string;
+  referenceImages?: string[];
 };
 
 export type AgentAnalyses = {

@@ -83,10 +83,11 @@ src/
 ├── queue.ts          fila serial em memória, deduplicada por issueKey
 ├── config.ts         variáveis de ambiente, validadas no boot
 ├── operations/       o fluxo: contexto → triagem → implementação ou pesquisa
+│   ├── context/         Confluence, anexos e imagens do ticket (collectIssueContext)
 │   └── implementation/  uma fase por arquivo: prepare, plan, implementRepo, replicate
 ├── agent/            camada fina sobre o Claude Agent SDK
 ├── tools/            Jira, Confluence, Git, Github (gh) e Catalog
-└── utils/            ADF, exec, parsing, links e leitura de prompts
+└── utils/            ADF, docx, exec, parsing, links, anexos e prompts
 
 prompts/              prompts de sistema/instrução em Markdown
 catalog.json          repositórios em que o agente pode atuar
