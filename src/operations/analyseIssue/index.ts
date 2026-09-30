@@ -15,15 +15,19 @@ export async function analyseIssue(issue: JiraIssue): Promise<AgentAnalyses> {
   const list = catalog.repos.map((r) => `- ${r.name}: ${r.description}`).join("\n");
   const docs = issue.linkedDocs ? `\n\nLinked documentation:\n${issue.linkedDocs}` : "";
   const comments = issue.comments ? `\n\nTicket comments (chronological):\n${issue.comments}` : "";
+  const systems = issue.systemFields ? `\n\nTicket system fields:\n${issue.systemFields}` : "";
   const prompt = [
-    `Jira issue ${issue.key}: ${issue.summary}`,
-    `Description:\n${issue.description}${docs}${comments}`,
+    `Jira issue ${issue.key}`,
+    `Title: ${issue.summary}`,
+    `Description:\n${issue.description}${systems}${docs}${comments}`,
     ``,
     `Available repositories:`,
     list,
     ``,
     TRIAGE_INSTRUCTIONS,
   ].join("\n");
+
+  if (issue.systemFields) log(`system fields: ${issue.systemFields.replace(/\n/g, " | ")}`);
 
   // Pure text classification — no file tools.
   const out = await agent.query(prompt, TRIAGE_SYSTEM_PROMPT, []);
