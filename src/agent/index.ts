@@ -1,11 +1,12 @@
 import { ClaudeAgent } from "./Claude.ts";
 import type { AgentRunner, RunOptions, AgentClient } from "./types.ts";
+import { config } from "../config.ts";
 
-const PLAN_TOOLS = ["Read", "Grep", "Glob", "WebSearch", "WebFetch"];
+const BASE_PLAN_TOOLS = ["Read", "Grep", "Glob", "WebFetch"];
 
-// Interactive-only tools the plan agent must never reach in a headless run:
-// spawning sub-agents, asking the user, and self-scheduling wake-ups all assume
-// a session/loop that doesn't exist here. Removed from the model's context.
+const PLAN_TOOLS =
+  config.agentProvider === "bedrock" ? BASE_PLAN_TOOLS : [...BASE_PLAN_TOOLS, "WebSearch"];
+
 const PLAN_DISALLOWED_TOOLS = ["Agent", "Task", "AskUserQuestion", "ScheduleWakeup"];
 
 export function Agent(): AgentClient {
@@ -31,7 +32,5 @@ export function Agent(): AgentClient {
 }
 
 function resolveRunner(): AgentRunner {
-  // Only the Claude runner is implemented today. When a second provider is
-  // added, branch on config.agentProvider here.
   return ClaudeAgent();
 }

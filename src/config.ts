@@ -1,11 +1,6 @@
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
-// Single source of truth for environment configuration. Reads every var once,
-// applies defaults, and fails fast at import time if a required var is missing —
-// so a misconfigured deploy dies at boot with a clear message instead of later
-// with a cryptic auth error. Imported (transitively) from src/index.ts at startup.
-
 const missing: string[] = [];
 
 function required(name: string): string {
@@ -24,8 +19,19 @@ function optional(name: string, fallback: string): string {
 
 const replicaBases = ["develop", "qa"];
 
+const agentProvider = optional("AGENT_PROVIDER", "claude");
+
+if (agentProvider !== "claude" && agentProvider !== "bedrock") {
+  throw new Error(`Unknown AGENT_PROVIDER "${agentProvider}" (expected "claude" or "bedrock")`);
+}
+
 const agentSecret = required("AGENT_SECRET");
-const anthropicApiKey = required("ANTHROPIC_API_KEY");
+
+const anthropicApiKey = agentProvider === "claude" ? required("ANTHROPIC_API_KEY") : optional("ANTHROPIC_API_KEY", "");
+const bedrockRegion = agentProvider === "bedrock" ? required("AWS_REGION") : optional("AWS_REGION", "");
+const bedrockApiKey = optional("AWS_BEARER_TOKEN_BEDROCK", optional("AWS_BEDROCK_API_KEY", ""))
+const bedrockSonnetModel = optional("BEDROCK_SONNET_MODEL", "us.anthropic.claude-sonnet-5");
+
 const jiraEmail = required("JIRA_EMAIL");
 const jiraApiKey = required("JIRA_API_KEY");
 const jiraUrl = required("JIRA_URL");
@@ -39,7 +45,8 @@ export const config = Object.freeze({
   port: Number(optional("PORT", "3000")),
   agentSecret,
   anthropicApiKey,
-  agentProvider: optional("AGENT_PROVIDER", "claude"),
+  agentProvider,
+  bedrock: Object.freeze({ region: bedrockRegion, apiKey: bedrockApiKey, sonnetModel: bedrockSonnetModel }),
   jira: Object.freeze({ email: jiraEmail, apiKey: jiraApiKey, url: jiraUrl }),
   github: Object.freeze({ token: githubToken }),
   mirrorsDir: optional("MIRRORS_DIR", join(tmpdir(), "cashme-agent-mirrors")),
