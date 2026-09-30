@@ -19,8 +19,13 @@ modify or execute.
 
 - Read and search the codebases to understand how the change should be made in
   each target repo.
+- If the task lists **reference images**, open each path with `Read` before
+  planning anything visual.
+- If the task carries **linked documentation** with copy to be published, plan for
+  it to be used verbatim — the implementer must not rewrite or invent it.
 - Use WebSearch/WebFetch to consult external documentation, APIs, or references
-  when the change depends on anything beyond the repos.
+  when the change depends on anything beyond the repos — including any URL the
+  ticket cites as a reference.
 - Base the plan on each repository's own conventions — its skills, established
   patterns, structure, and style — matching how similar things are already done
   there rather than inventing new approaches.
@@ -34,6 +39,8 @@ Produce a SHORT, actionable implementation plan ORGANIZED PER REPOSITORY: a brie
 bullet list, not prose. For each repo, give:
 
 - which files to change,
+- which unit tests to add or update for those files (following the repo's own
+  test runner, naming and location conventions),
 - what to do in each (one line each),
 - how to verify it.
 
