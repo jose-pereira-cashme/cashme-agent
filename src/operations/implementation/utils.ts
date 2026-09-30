@@ -5,6 +5,7 @@ import type { VerifyResult } from "../types.ts";
 export const IMPLEMENT_SYSTEM_PROMPT: string = readPrompt("implementation", "system");
 export const PLAN_SYSTEM_PROMPT: string = readPrompt("implementation", "plan");
 export const RETRY_NOTICE: string = readPrompt("implementation", "retryNotice");
+export const RESOLVE_CONFLICT_SYSTEM_PROMPT: string = readPrompt("implementation", "resolveConflict");
 
 export function parseVerifyResult(raw: string): VerifyResult {
   const parsed = parseAgentJson(raw);

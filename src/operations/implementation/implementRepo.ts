@@ -66,7 +66,7 @@ export async function implementRepo(ctx: {
     log(`[${repo.name}] work branch pushed: ${branch} (no PR against ${base})`);
 
     const replicas = await replicateToBases({
-      git, github, repo, cwd, branch, issue, summary: result.changeSummary, log,
+      agent, git, github, repo, cwd, branch, issue, summary: result.changeSummary, log,
     });
     return { repo: repo.name, summary: result.changeSummary, branch, replicas, diff };
   } catch (err) {

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { rm } from "node:fs/promises";
+import { chmod, readdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { run } from "../utils/exec.ts";
@@ -10,10 +10,60 @@ import { config } from "../config.ts";
 const redact = (s: string) => s.replace(/x-access-token:[^@]+@/g, "x-access-token:***@");
 
 const IDENTITY = ["-c", "user.name=cashme-agent", "-c", "user.email=agent@cashme.com.br"];
+const NO_HOOKS = ["-c", "core.hooksPath=/dev/null"];
+const MAX_CONFLICT_RESOLUTIONS = 3;
+
+function gitRun(args: string[], cwd?: string) {
+  return run("git", args, { cwd, env: { HUSKY: "0", GIT_EDITOR: "true" } });
+}
+
+async function removeDir(path: string, log?: (msg: string) => void): Promise<void> {
+  const attempt = () => rm(path, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  try {
+    await attempt();
+    return;
+  } catch {
+    // Fall through to the read-only fallback below.
+  }
+  try {
+    const entries = await readdir(path, { recursive: true, withFileTypes: true });
+    for (const entry of entries) {
+      // Directories keep their traversal bit — 0o666 on a directory would make
+      // the tree unreadable and so undeletable.
+      const mode = entry.isDirectory() ? 0o777 : 0o666;
+      await chmod(join(entry.parentPath, entry.name), mode).catch(() => {});
+    }
+    await attempt();
+  } catch (err) {
+    log?.(`cleanup failed for ${path}: ${(err as Error).message}`);
+  }
+}
+
+// Paths git considers unmerged. Non-empty exactly while a cherry-pick is parked
+// on a conflict, which is what separates a conflict from any other stop.
+async function unmergedPaths(cwd: string): Promise<string[]> {
+  const r = await gitRun(["diff", "--name-only", "--diff-filter=U"], cwd);
+  return r.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
+// `git add` happily stages a file still full of conflict markers, so a resolver
+// that edited around them would produce a commit that builds nowhere. Checked
+// before the cherry-pick is allowed to continue.
+async function conflictMarkers(cwd: string, files: string[]): Promise<string[]> {
+  const left: string[] = [];
+  for (const file of files) {
+    try {
+      if (/^<{7}( |$)/m.test(await readFile(join(cwd, file), "utf8"))) left.push(file);
+    } catch {
+      // Unreadable means the resolution deleted it — nothing to inspect.
+    }
+  }
+  return left;
+}
 
 export function Git(): GitClient {
   async function git(args: string[], cwd?: string): Promise<string> {
-    const r = await run("git", args, { cwd, env: { HUSKY: "0" } });
+    const r = await gitRun(args, cwd);
     if (r.code !== 0) {
       throw new Error(`git ${redact(args.join(" "))} failed: ${redact(r.stderr || r.stdout)}`);
     }
@@ -29,7 +79,7 @@ export function Git(): GitClient {
   }
 
   async function remoteBranchExists(cwd: string, branch: string): Promise<boolean> {
-    const r = await run("git", ["show-ref", "--verify", "--quiet", `refs/remotes/origin/${branch}`], { cwd });
+    const r = await gitRun(["show-ref", "--verify", "--quiet", `refs/remotes/origin/${branch}`], cwd);
     return r.code === 0;
   }
 
@@ -45,8 +95,15 @@ export function Git(): GitClient {
     },
     async makeWorkingCopy(repo, jobId) {
       const dest = join(tmpdir(), `job-${jobId}`);
-      await git(["clone", mirrorPath(repo), dest]);
-      await git(["remote", "set-url", "origin", authUrl(repo.url)], dest);
+      await removeDir(dest);
+      try {
+        await git(["clone", mirrorPath(repo), dest]);
+        await git(["remote", "set-url", "origin", authUrl(repo.url)], dest);
+      } catch (err) {
+        // The caller never learns this path, so it has to be dropped here.
+        await removeDir(dest);
+        throw err;
+      }
       return dest;
     },
     async createBranch(cwd, branch, base) {
@@ -84,40 +141,73 @@ export function Git(): GitClient {
     },
     async commitAll(cwd, message) {
       await git(["add", "-A"], cwd);
-      await git([...IDENTITY, "commit", "--no-verify", "-m", message], cwd);
+      await git([...NO_HOOKS, ...IDENTITY, "commit", "--no-verify", "-m", message], cwd);
     },
     async hasRemoteBranch(cwd, branch) {
       return remoteBranchExists(cwd, branch);
     },
-    async replicateCommits(cwd, { branch, base, fromRef, fromBase }) {
-      const range = `${fromBase}..${fromRef}`;
-      const commits = (await git(["rev-list", "--reverse", range], cwd)).split("\n").filter(Boolean);
-      if (commits.length === 0) throw new Error(`no commits in ${range} to replicate`);
+    async replicateCommits(cwd, { branch, base, fromRef, fromBase, onConflict }) {
+      const commits = (await git([
+        "rev-list", "--reverse", "--no-merges", "--cherry-pick", "--right-only",
+        `origin/${base}...${fromRef}`, "--not", fromBase,
+      ], cwd)).split("\n").filter(Boolean);
+      // Nothing missing is the steady state of a re-run, not an error.
+      if (commits.length === 0) return { replicated: false };
 
       // -B so a leftover local branch from an earlier base is rebuilt from
-      // scratch: the replica is always base + the work branch's commits.
+      // scratch: the replica is always base + the commits the base still lacks.
       await git(["checkout", "-B", branch, `origin/${base}`], cwd);
 
-      let r = await run("git", [...IDENTITY, "cherry-pick", ...commits], { cwd, env: { HUSKY: "0" } });
-      // A commit whose change is already in this base cherry-picks to nothing and
-      // stops the sequencer; skip it and let the remaining commits through.
-      for (let guard = 0; r.code !== 0 && guard < commits.length; guard++) {
-        if (!/is now empty|nothing to commit/i.test(`${r.stderr}\n${r.stdout}`)) break;
-        r = await run("git", [...IDENTITY, "cherry-pick", "--skip"], { cwd, env: { HUSKY: "0" } });
+      const resolved = new Set<string>();
+      const abort = async (msg: string): Promise<never> => {
+        await gitRun(["cherry-pick", "--abort"], cwd);
+        throw new Error(msg);
+      };
+
+      let r = await gitRun([...NO_HOOKS, ...IDENTITY, "cherry-pick", ...commits], cwd);
+      let budget = commits.length + MAX_CONFLICT_RESOLUTIONS;
+      while (r.code !== 0 && budget-- > 0) {
+        if (/is now empty|nothing to commit/i.test(`${r.stderr}\n${r.stdout}`)) {
+          r = await gitRun([...NO_HOOKS, ...IDENTITY, "cherry-pick", "--skip"], cwd);
+          continue;
+        }
+
+        const conflicted = await unmergedPaths(cwd);
+        if (conflicted.length === 0) break; // stopped for some other reason
+        if (!onConflict) {
+          return await abort(`cherry-pick onto ${base} conflicted in: ${conflicted.join(", ")}`);
+        }
+
+        await onConflict(conflicted);
+
+        const withMarkers = await conflictMarkers(cwd, conflicted);
+        if (withMarkers.length > 0) {
+          return await abort(`cherry-pick onto ${base}: conflict markers left in: ${withMarkers.join(", ")}`);
+        }
+
+        for (const f of conflicted) resolved.add(f);
+        await git(["add", "-A"], cwd);
+
+        const stillUnmerged = await unmergedPaths(cwd);
+        if (stillUnmerged.length > 0) {
+          return await abort(`cherry-pick onto ${base}: still unmerged after resolution: ${stillUnmerged.join(", ")}`);
+        }
+        r = await gitRun([...NO_HOOKS, ...IDENTITY, "cherry-pick", "--continue"], cwd);
       }
+
       if (r.code !== 0) {
-        await run("git", ["cherry-pick", "--abort"], { cwd });
-        throw new Error(`cherry-pick onto ${base} failed: ${redact(r.stderr || r.stdout)}`);
+        return await abort(`cherry-pick onto ${base} failed: ${redact(r.stderr || r.stdout)}`);
       }
 
       const ahead = (await git(["rev-list", "--count", `origin/${base}..HEAD`], cwd)).trim();
-      if (ahead === "0") throw new Error(`nothing to replicate: the change is already in ${base}`);
+      if (ahead === "0") return { replicated: false };
+      return { replicated: true, resolvedFiles: [...resolved] };
     },
     async push(cwd, branch) {
       await git(["push", "--force-with-lease", "-u", "origin", branch], cwd);
     },
     async cleanup(cwd) {
-      await rm(cwd, { recursive: true, force: true });
+      await removeDir(cwd, (msg) => console.log(`[git] ${msg}`));
     },
   };
 }

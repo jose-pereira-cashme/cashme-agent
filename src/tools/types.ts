@@ -7,6 +7,10 @@ export type JiraClient = {
   transitionIssue(key: string, status: string): Promise<void>;
 };
 
+export type ReplicationResult =
+  | { replicated: false }
+  | { replicated: true; resolvedFiles: string[] };
+
 export type GitClient = {
   ensureMirror(repo: RepoEntry): Promise<string>;
   makeWorkingCopy(repo: RepoEntry, jobId: string): Promise<string>;
@@ -18,7 +22,8 @@ export type GitClient = {
   hasRemoteBranch(cwd: string, branch: string): Promise<boolean>;
   replicateCommits(cwd: string, args: {
     branch: string; base: string; fromRef: string; fromBase: string;
-  }): Promise<void>;
+    onConflict?: (files: string[]) => Promise<void>;
+  }): Promise<ReplicationResult>;
   push(cwd: string, branch: string): Promise<void>;
   cleanup(cwd: string): Promise<void>;
 };

@@ -2,9 +2,6 @@ import type { RepoEntry } from "../../types/domain.ts";
 import type { CatalogClient, GitClient } from "../../tools/types.ts";
 import type { Logger, PreparedRepo, RepoOutcome } from "../types.ts";
 
-// Resolves the analysed repo names to catalog entries: de-duplicated, unknown
-// names dropped. Falls back to the first catalog repo if nothing matched, to
-// preserve the previous single-repo behaviour.
 export function resolveRepos(catalog: CatalogClient, repoNames: string[]): RepoEntry[] {
   const seen = new Set<string>();
   const repos: RepoEntry[] = [];
@@ -33,12 +30,14 @@ export async function prepareRepos(args: {
   const failures: RepoOutcome[] = [];
 
   for (const repo of repos) {
+    let cwd: string | null = null;
     try {
       await git.ensureMirror(repo);
-      const cwd = await git.makeWorkingCopy(repo, `${issueKey.toLowerCase()}-${repo.name}`);
+      cwd = await git.makeWorkingCopy(repo, `${issueKey.toLowerCase()}-${repo.name}`);
       await git.createBranch(cwd, branch, repo.defaultBranch);
       prepared.push({ repo, cwd });
     } catch (err) {
+      if (cwd) await git.cleanup(cwd);
       log(`[${repo.name}] failed to prepare: ${(err as Error).message}`);
       failures.push({
         repo: repo.name,

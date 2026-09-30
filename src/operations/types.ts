@@ -25,6 +25,8 @@ export type ReplicaOutcome = {
   branch: string;
   prUrl?: string;
   reason?: string;
+  resolvedFiles?: string[];
+  upToDate?: boolean;
 };
 
 export type RepoOutcome = {
