@@ -66,9 +66,9 @@ export async function processImplementation(issue: JiraIssue, analyses: AgentAna
     if (prs > 0) {
       try {
         await jira.transitionIssue(issue.key, config.jiraReviewStatus);
-      } catch {
+      } catch (err) {
         // Best-effort — at least one PR is open, so a transition failure is non-fatal.
-        log("transition failed (non-fatal — PRs already opened)");
+        log(`transition failed (non-fatal — PRs already opened) - ${err}`);
       }
     }
   } catch (err) {
