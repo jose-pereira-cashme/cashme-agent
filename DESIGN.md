@@ -100,7 +100,7 @@ execuções do agente no mesmo ticket ao mesmo tempo.
 
 Antes de qualquer decisão, o serviço monta o contexto mais completo possível do
 ticket, usando a API REST v3 do Jira. Esse passo é um módulo só dele
-(`src/operations/context/`), com uma função de entrada (`collectIssueContext`) e
+(`src/application/context/`), com uma função de entrada (`collectIssueContext`) e
 uma de limpeza (`releaseIssueContext`), chamada sempre em `finally`:
 
 - Resumo, tipo e autor do ticket.
@@ -153,7 +153,7 @@ o código, inclua todos, a não ser que o ticket cite apenas um.
 ### Pipeline de implementação
 
 Para tickets de implementação, o pipeline tem quatro fases — cada uma em seu
-próprio módulo em `src/operations/implementation/` (`prepare.ts`, `plan.ts`,
+próprio módulo em `src/application/implementation/` (`prepare.ts`, `plan.ts`,
 `implementRepo.ts` + `replicate.ts`), com o `index.ts` só orquestrando e
 reportando:
 
@@ -306,6 +306,35 @@ flowchart TD
   RPT --> CL[Apagar os arquivos temporários do ticket]
   RC --> CL
 ```
+
+#### Camadas
+
+O código segue uma separação em camadas, com as dependências apontando sempre
+para dentro:
+
+```
+domain  ←  application  ←  infrastructure
+                        ←  entrypoints
+```
+
+- **`domain/`** — tipos e regras puras (`Issue`, `Report`, resultados por
+  repositório, classificação de anexos, nome de branch). Sem I/O e sem `config`.
+- **`application/`** — os casos de uso (contexto, triagem, implementação,
+  pesquisa). Dependem só do domínio e dos contratos em `application/ports.ts`:
+  `IssueTracker`, `DocsSource`, `GitClient`, `CodeHost`, `CatalogSource`,
+  `AgentClient`, `AttachmentStore` e `DocumentParser`, além de `Settings` e
+  `Prompts`.
+- **`infrastructure/`** — os adaptadores que implementam esses contratos (Jira,
+  Confluence, Git, GitHub, catálogo, Claude, prompts em disco, anexos em disco).
+  Cada um recebe a própria configuração como argumento.
+- **`entrypoints/`** — o servidor Express e a fila.
+
+`src/index.ts` é o único módulo que conhece todas as camadas: lê o `config`,
+monta os adaptadores num objeto `Deps` e o entrega aos casos de uso. Os
+comentários no Jira saem dos casos de uso como dado (`Report`); só o adaptador do
+Jira sabe transformá-los em ADF. O catálogo é relido a cada job, então editar o
+`catalog.json` não exige reiniciar o serviço; os prompts são lidos no boot, e um
+arquivo faltando derruba a inicialização.
 
 #### Repositórios espelhados (mirrors)
 

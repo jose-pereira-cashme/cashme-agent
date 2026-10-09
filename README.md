@@ -79,15 +79,17 @@ curl -X POST http://localhost:3000/agent \
 
 ```
 src/
-├── index.ts          servidor Express: /health e /agent
-├── queue.ts          fila serial em memória, deduplicada por issueKey
-├── config.ts         variáveis de ambiente, validadas no boot
-├── operations/       o fluxo: contexto → triagem → implementação ou pesquisa
-│   ├── context/         Confluence, anexos e imagens do ticket (collectIssueContext)
-│   └── implementation/  uma fase por arquivo: prepare, plan, implementRepo, replicate
-├── agent/            camada fina sobre o Claude Agent SDK
-├── tools/            Jira, Confluence, Git, Github (gh) e Catalog
-└── utils/            ADF, docx, exec, parsing, links, anexos e prompts
+├── index.ts          composition root: monta os adaptadores e liga fila + servidor
+├── config.ts         variáveis de ambiente, validadas no boot (lidas só pelo index.ts)
+├── domain/           tipos e regras puras: Issue, Report, outcomes, anexos, convenções
+├── application/      os casos de uso: contexto → triagem → implementação ou pesquisa
+│   ├── ports.ts         contratos que a infraestrutura implementa (+ Deps, Settings, Prompts)
+│   ├── context/         docs vinculados, anexos e imagens do ticket (collectIssueContext)
+│   ├── triage/          classificação do ticket
+│   ├── implementation/  uma fase por arquivo: prepare, plan, implementRepo, replicate
+│   └── research/        investigação somente leitura
+├── infrastructure/   adaptadores: jira, confluence, git, github, catalog, agent, prompts, files
+└── entrypoints/      servidor Express (/health e /agent) e fila serial deduplicada por issueKey
 
 prompts/              prompts de sistema/instrução em Markdown
 catalog.json          repositórios em que o agente pode atuar

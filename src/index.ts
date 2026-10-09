@@ -1,34 +1,36 @@
-import express from 'express'
-import { handleAgentRequest } from './operations/HandleAgentRequest.ts';
-import { createQueue } from './queue.ts';
 import { config } from './config.ts';
+import type { Deps } from './application/ports.ts';
+import { createHandleAgentRequest } from './application/handleAgentRequest.ts';
+import { JiraTracker } from './infrastructure/jira/JiraTracker.ts';
+import { ConfluenceDocs } from './infrastructure/confluence/ConfluenceDocs.ts';
+import { Git } from './infrastructure/git/Git.ts';
+import { Github } from './infrastructure/github/Github.ts';
+import { FileCatalog } from './infrastructure/catalog/FileCatalog.ts';
+import { Agent } from './infrastructure/agent/Agent.ts';
+import { DiskAttachmentStore } from './infrastructure/files/AttachmentStore.ts';
+import { extractDocxText } from './infrastructure/files/docx.ts';
+import { loadPrompts } from './infrastructure/prompts/loadPrompts.ts';
+import { createQueue } from './entrypoints/queue.ts';
+import { startHttp } from './entrypoints/http.ts';
 
-const app = express();
-app.use(express.json());
+// Composition root: the only module that knows every layer.
+const deps: Deps = {
+  tracker: JiraTracker(config.jira),
+  docs: ConfluenceDocs(config.jira),
+  git: Git({ mirrorsDir: config.mirrorsDir, githubToken: config.github.token }),
+  codeHost: Github({ token: config.github.token }),
+  catalog: FileCatalog(config.catalogPath),
+  agent: Agent({ provider: config.agentProvider, anthropicApiKey: config.anthropicApiKey, bedrock: config.bedrock }),
+  attachments: DiskAttachmentStore(config.attachmentsDir),
+  parser: { docxToText: extractDocxText },
+  prompts: loadPrompts(config.promptsDir),
+  settings: {
+    maxVerifyAttempts: config.maxVerifyAttempts,
+    reviewStatus: config.jiraReviewStatus,
+    replicaBases: config.replicaBases,
+  },
+};
 
-const queue = createQueue(handleAgentRequest);
+const queue = createQueue(createHandleAgentRequest(deps));
 
-app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
-});
-
-app.post("/agent", (req, res) => {
-  const secretHeader = req.header("X-Agent-Secret")
-  const { issueKey } = req.body
-
-  if (secretHeader !== config.agentSecret) {
-    return res.status(401).json({ error: "unauthorized" });
-  }
-
-  if (!issueKey) {
-    return res.status(400).json({ error: "missing issue key" });
-  }
-
-  queue.enqueue(issueKey)
-
-  return res.status(202).json({ status: "queued", issueKey });
-});
-
-app.listen(config.port, () => {
-  console.log(`Server is running on http://localhost:${config.port}`)
-})
+startHttp({ port: config.port, secret: config.agentSecret, enqueue: queue.enqueue });

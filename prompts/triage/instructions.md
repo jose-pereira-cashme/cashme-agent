@@ -74,7 +74,7 @@ Reply with JSON:
 - `reason` — brief explanation of the classification. Say which evidence decided
   the repo (title marker, system field, URL/path, or catalog description), and
   note any conflict between them. For `"other"`, write it in Brazilian
-  Portuguese and addressed to the ticket reporter: state what is missing or
+  Portuguese and addressed to the ticket assignee: state what is missing or
   ambiguous in the description, since this text is posted back as a Jira comment
 - `userPrompt` — extracted instruction/question from the description (empty string
   `""` if none)

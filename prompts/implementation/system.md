@@ -78,10 +78,13 @@ keeping test coverage high is part of the deliverable, not an optional extra.
 
 When finished, respond with ONLY a single JSON object — no markdown fences, no prose:
 
-{"verifyPassed": boolean, "verifyOutput": string, "changeSummary": string}
+{"verifyPassed": boolean, "verifyOutput": string, "changeSummary": string, "commitMessage": string}
 
 - `verifyPassed` — whether verification succeeded
 - `verifyOutput` — the relevant build/test output, truncated to the essentials
 - `changeSummary` — a one-line imperative summary of what changed, **written in
   Brazilian Portuguese** (it is published to Jira and to the PR body). Keep
   identifiers, file paths, and commands in their original form.
+- `commitMessage` — the same one-line imperative summary, **written in English**
+  (it becomes the git commit message). Lowercase first word, no trailing period,
+  no ticket key or type prefix — those are added for you.
